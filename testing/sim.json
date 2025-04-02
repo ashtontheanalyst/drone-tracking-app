@@ -1,0 +1,29 @@
+{
+    "call_sign": "string",
+    "position": {
+        "latitude": 0,
+        "longitude": 0,
+        "altitude": 0
+    },
+    "velocity": {
+        "airspeed": 0,
+        "ground_speed": 0,
+        "verticle_speed": 0,
+        "units_speed": "MetersPerSecond",
+        "track": 0
+    },
+    "time_measured": "2025-01-27T19:09:31.714Z",
+    "battery": {
+        "voltage": 0,
+        "current": 0
+    },
+    "orientation": {
+        "pitch": 0,
+        "roll": 0,
+        "yaw": 0,
+        "pitch_rate": 0,
+        "roll_rate": 0,
+        "yaw_rate": 0
+    },
+    "airframe": "Generic"
+}

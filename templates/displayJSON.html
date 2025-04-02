@@ -1,0 +1,8 @@
+{% extends "index.html" %}
+
+{% block title %}Data Page{% endblock %}
+
+{% block content %}
+    <h1>Received JSON Data</h1>
+    <pre>{{ data | tojson(indent=4) }}</pre>
+{% endblock %}

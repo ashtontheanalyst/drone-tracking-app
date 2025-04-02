@@ -1,0 +1,15 @@
+{% extends "index.html" %}
+
+{% block title %}Drone 1{% endblock %}
+
+{% block content %}
+    <h1 style="text-align: center;">Real-Time Aircraft Tracker</h1>
+            
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- External map.js script -->
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+{% endblock %}

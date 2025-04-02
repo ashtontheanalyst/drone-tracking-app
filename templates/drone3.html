@@ -1,0 +1,18 @@
+{% extends "index.html" %}
+
+{% block title %}Drone 3{% endblock %}
+
+{% block content %}
+    <h1 style="text-align: center;">Drone 3 Tracker</h1>
+            
+    <!-- Hidden field to store the drone ID -->
+    <input type="hidden" id="drone-id" value="3">
+
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- External map.js script -->
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+{% endblock %}
