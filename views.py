@@ -15,10 +15,10 @@ comments = []
 
 # Drones is a list of dictionaries, which are collections of key-value pairs
 drones = [
-    {"id": 1, "lat": 27.7123, "lon": -97.3946},
-    {"id": 2, "lat": 27.7643, "lon": -97.3239},
-    {"id": 3, "lat": 27.6801, "lon": -97.2684},
-    {"id": 4, "lat": 27.7092, "lon": -97.3212}
+    {"call_sign": "alpha", "latitude": 27.7123, "longitude": -97.3946},
+    {"call_sign": "bravo", "latitude": 27.7643, "longitude": -97.3239},
+    {"call_sign": "charlie", "latitude": 27.6801, "longitude": -97.2684},
+    {"call_sign": "delta", "latitude": 27.7092, "longitude": -97.3212}
 ]
 #-----DRONE PAGES----------------------------------------------------------------------------------------------------------------#
 
@@ -30,45 +30,45 @@ def all_drones():
     update_drone_positions()
     return jsonify(drones)
 
-@views.route("/drone1-data")
-def drone1_data():
+@views.route("/droneA-data")
+def droneA_data():
     global drones
     update_drone_positions()
     return jsonify(drones[0])
 
-@views.route("/drone1")
-def drone1():
-    return render_template("drone1.html")
+@views.route("/droneA")
+def droneA():
+    return render_template("droneA.html")
 
-@views.route("/drone2-data")
-def drone2_data():
+@views.route("/droneB-data")
+def droneB_data():
     global drones
     update_drone_positions()
     return jsonify(drones[1])
 
-@views.route("/drone2")
-def drone2():
-    return render_template("drone2.html")
+@views.route("/droneB")
+def droneB():
+    return render_template("droneB.html")
 
-@views.route("/drone3-data")
-def drone3_data():
+@views.route("/droneC-data")
+def droneC_data():
     global drones
     update_drone_positions()
     return jsonify(drones[2])
 
-@views.route("/drone3")
-def drone3():
-    return render_template("drone3.html")
+@views.route("/droneC")
+def droneC():
+    return render_template("droneC.html")
 
-@views.route("/drone4-data")
-def drone4_data():
+@views.route("/droneD-data")
+def droneD_data():
     global drones
     update_drone_positions()
     return jsonify(drones[3])
 
-@views.route("/drone4")
-def drone4():
-    return render_template("drone4.html")
+@views.route("/droneD")
+def droneD():
+    return render_template("droneD.html")
 
 #-----DRONE TAKING JSON INPUT------------------------------------------------------------------------------------------------------#
 # This will be drone J for JSON, it will take in user inputted json through a curl
@@ -90,8 +90,8 @@ def droneJ():
 def update_drone_positions():
     global drones
     for drone in drones:
-        drone["lat"] += random.uniform(-0.003, 0.003)  # Simulate small movement in lat
-        drone["lon"] += random.uniform(-0.003, 0.003)  # Simulate small movement in lon
+        drone["latitude"] += random.uniform(-0.003, 0.003)  # Simulate small movement in lat
+        drone["longitude"] += random.uniform(-0.003, 0.003)  # Simulate small movement in lon
 
 #-----HOME PAGE---------------------------------------------------------------------------------------------------------------------#
 

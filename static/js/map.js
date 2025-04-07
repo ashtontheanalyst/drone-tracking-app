@@ -22,20 +22,20 @@ function fetchDroneData() {
     let url = window.location.pathname;  // Get current page URL
     let endpoint = "/drone-data";  // Default to all drones
 
-    if (url === "/drone1") {
-        endpoint = "/drone1-data";  // Only fetch Drone 1's data
+    if (url === "/droneA") {
+        endpoint = "/droneA-data";  // Only fetch Drone 1's data
     }
 
-    if (url === "/drone2") {
-        endpoint = "/drone2-data";  // Only fetch Drone 2's data
+    if (url === "/droneB") {
+        endpoint = "/droneB-data";  // Only fetch Drone 2's data
     }
 
-    if (url === "/drone3") {
-        endpoint = "/drone3-data";  // Only fetch Drone 3's data
+    if (url === "/droneC") {
+        endpoint = "/droneC-data";  // Only fetch Drone 3's data
     }
 
-    if (url === "/drone4") {
-        endpoint = "/drone4-data";  // Only fetch Drone 4's data
+    if (url === "/droneD") {
+        endpoint = "/droneD-data";  // Only fetch Drone 4's data
     }
 
     if (url === "/droneJ") {
@@ -58,15 +58,15 @@ function fetchDroneData() {
 
 // Function to update or create a drone marker
 function updateOrCreateMarker(drone) {
-    if (!droneMarkers[drone.id]) {
+    if (!droneMarkers[drone.call_sign]) {
         // Create new marker for drone
-        droneMarkers[drone.id] = L.marker([drone.lat, drone.lon], { icon: planeIcon }).addTo(map)
-            .bindPopup(`Drone ${drone.id}`);
+        droneMarkers[drone.call_sign] = L.marker([drone.latitude, drone.longitude], { icon: planeIcon }).addTo(map)
+            .bindPopup(`Drone ${drone.call_sign}`);
     } else {
         // Update existing marker for drone
-        let newLatLng = new L.LatLng(drone.lat, drone.lon);
-        droneMarkers[drone.id].setLatLng(newLatLng);
-        droneMarkers[drone.id].bindPopup(`Drone ${drone.id}: ${drone.lat.toFixed(4)}, ${drone.lon.toFixed(4)}`).openPopup();
+        let newLatLng = new L.LatLng(drone.latitude, drone.longitude);
+        droneMarkers[drone.call_sign].setLatLng(newLatLng);
+        droneMarkers[drone.call_sign].bindPopup(`Drone ${drone.call_sign}: ${drone.latitude.toFixed(4)}, ${drone.longitude.toFixed(4)}`).openPopup();
     }
 }
 

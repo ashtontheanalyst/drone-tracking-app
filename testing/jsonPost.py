@@ -9,9 +9,9 @@ HEADERS = {"Content-Type": "application/json"}
 
 def generate_random_json():
     return {
-        "id": 5,
-        "lat": round(27.7123 + random.uniform(-0.005, 0.005), 6),
-        "lon": round(-97.3946 + random.uniform(-0.005, 0.005), 6)
+        "call_sign": "juliet",
+        "latitude": round(27.7123 + random.uniform(-0.005, 0.005), 6),
+        "longitude": round(-97.3946 + random.uniform(-0.005, 0.005), 6)
     }
 
 def send_post_request():
