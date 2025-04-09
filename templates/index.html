@@ -7,115 +7,23 @@
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    
-    <style>
-        /* Basic styling for the header */
-        .header {
-            background-color: #213D57;
-            padding: 15px;
-            display: flex;
-            justify-content: flex-start; /* Aligns content to the right */
-            align-items: center;
-            width: 100%;
-        }
 
-        .nav-title {
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            margin-right: 15px; /* Space between title and buttons */
-        }
+    <!-- Link to the external CSS file -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 
-        .header button {
-            background-color: #475F76;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            margin: 0 15px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .header button:hover {
-            background-color: #C6D1D8;
-        }
-
-        /* Dropdown container */
-        .dropdown {
-            position: relative;
-            z-index: 1000;
-            display: inline-block;
-        }
-
-        /* Dropdown button */
-        .dropbtn {
-            background-color: #475F76;
-            color: white;
-            padding: 10px 15px;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-        }
-
-        .dropbtn:hover {
-            background-color: #C6D1D8;
-        }
-
-        /* Dropdown content (hidden by default) */
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: #475F76;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
-            z-index: 1;
-        }
-
-        /* Links inside the dropdown */
-        .dropdown-content a {
-            color: white;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-        }
-
-        .dropdown-content a:hover {
-            background-color: #C6D1D8;
-        }
-
-        /* Show dropdown on hover */
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
-
-        /* This is for the map */
-        body { font-family: Arial, sans-serif; }
-        #map {
-            height: 500px;
-            width: 80%;
-            margin: 20px auto;
-            border-radius: 10px;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-    </style>
 </head>
 <body>
-
     <!-- Header Navigation Bar -->
     <div class="header">
-        <div class="nav-title">BCDC Drone Tracker</div>  <!-- Title on the right side -->
+        <div class="nav-title">BCDC Drone Tracker</div>
         
         <button onclick="location.href='/'">Home</button>
-        
-        <!-- Dropdown button on Header to show drones -->
+
         <div class="dropdown">
             <button class="dropbtn">Drones ▾</button>
             <div class="dropdown-content">
                 <a href="/droneA">Drone A</a>
                 <a href="/droneB">Drone B</a>
-                <a href="/droneC">Drone C</a>
-                <a href="/droneD">Drone D</a>
                 <a href="/droneJ">Drone J</a>
             </div>
         </div>
@@ -128,14 +36,22 @@
     <div>
         {% block content %}
             <h1 style="text-align: center;">Real-Time Aircraft Tracker</h1>
-        
-            <!-- Map Container -->
-            <div id="map"></div>
-        
-            <!-- Leaflet JS -->
+
+            <!-- Two side-by-side maps -->
+            <div class="map-container">
+                <div id="map-all" class="map-box"></div>
+                <div id="map-single" class="map-box"></div>
+            </div>
+
+            <!-- Drone data boxes below the maps -->
+            <div id="drone-data-container" class="drone-data-container">
+                <!-- Dynamically populated data boxes will go here -->
+            </div>
+
+            <!-- Leaflet and Custom JS -->
             <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-            <!-- External map.js script -->
-            <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+            <script src="{{ url_for('static', filename='js/splitmap.js') }}"></script>
+            <script src="{{ url_for('static', filename='js/droneData.js') }}"></script>
         {% endblock %}
     </div>
 

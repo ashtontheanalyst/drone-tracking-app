@@ -1,0 +1,196 @@
+/* Basic styling for the header */
+.header {
+    background-color: #213D57;
+    padding: 15px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    width: 100%;
+}
+
+.nav-title {
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    margin-right: 15px;
+}
+
+.header button {
+    background-color: #475F76;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin: 0 15px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.header button:hover {
+    background-color: #C6D1D8;
+}
+
+.dropdown {
+    position: relative;
+    z-index: 1000;
+    display: inline-block;
+}
+
+.dropbtn {
+    background-color: #475F76;
+    color: white;
+    padding: 10px 15px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+}
+
+.dropbtn:hover {
+    background-color: #C6D1D8;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #475F76;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+.dropdown-content a {
+    color: white;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown-content a:hover {
+    background-color: #C6D1D8;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+body { font-family: Arial, sans-serif; }
+
+
+
+.map-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 20px;
+}
+
+.map-box {
+    height: 500px;
+    width: 45%;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Style for the container of drone data boxes */
+#drone-data-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* Style for each drone data box */
+.drone-data-box {
+    background-color: #213D57; /* Blue background like header */
+    color: white;  /* White text for everything */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    width: 250px;  /* Fixed width for consistency */
+    text-align: left;  /* Left-align text except for title */
+    transition: background-color 0.2s, transform 0.05s ease-in-out; /* Smooth transition */    
+}
+
+/* Hover effect for the drone box */
+.drone-data-box:hover {
+    background-color: #475F76;  /* Lighter blue when hovered */
+    transform: scale(1.05);  /* Slightly scale up the box */
+}
+
+/* Style for the drone title (centered, larger, bold, white) */
+.drone-data-box h3 {
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    color: white;  /* Title in white */
+    margin-top: 5px;
+    margin-bottom: 10px;
+    text-decoration: underline;  /* Underline the title */
+    text-decoration-color: white;  /* Set the underline color to white */
+}
+
+/* Style for each data item (white text) */
+.drone-data-box p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: white;  /* White text for details */
+}
+
+
+
+/* Map & Data Box Layout for Drone A */
+.drone-specific-pages {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 20px;
+}
+
+#map {
+    height: 600px; /* Map height */
+    width: 70%;    /* Adjust width to make room for the data box */
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Optional: add shadow */
+}
+
+.drone-specific-data-box {
+    background-color: #213D57;
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    width: 28%;  /* Adjust width of the data box */
+    height: 560px;  /* Match the map's height */
+    text-align: left;
+    overflow-y: auto;
+}
+
+.drone-specific-data-box h3 {
+    font-size: 22px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 10px;
+    text-decoration: underline;
+    text-decoration-color: white;
+    text-align: center;
+}
+
+.drone-specific-data-box p {
+    font-size: 16px;
+    margin: 10px 0;
+    color: white;
+}
+
+/* General container for the homepage map and drone data (splitmap) */
+.splitmap-container {
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+}
+
+.splitmap-container #map {
+    height: 500px;
+    width: 48%;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}

@@ -9,7 +9,7 @@ HEADERS = {"Content-Type": "application/json"}
 
 def generate_random_json():
     return {
-        "call_sign": "juliet",
+        "call_sign": "Juliet",
         "latitude": round(27.7123 + random.uniform(-0.005, 0.005), 6),
         "longitude": round(-97.3946 + random.uniform(-0.005, 0.005), 6)
     }

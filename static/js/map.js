@@ -1,5 +1,5 @@
 // Initialize map with a default center
-var map = L.map('map').setView([27.7123, -97.3246], 12);
+var map = L.map('map').setView([27.7123, -97.3246], 11);
 
 // Initialize an empty object to store drone markers
 var droneMarkers = {};
@@ -30,16 +30,8 @@ function fetchDroneData() {
         endpoint = "/droneB-data";  // Only fetch Drone 2's data
     }
 
-    if (url === "/droneC") {
-        endpoint = "/droneC-data";  // Only fetch Drone 3's data
-    }
-
-    if (url === "/droneD") {
-        endpoint = "/droneD-data";  // Only fetch Drone 4's data
-    }
-
     if (url === "/droneJ") {
-        endpoint = "/droneJ-data";// find the global var. for drone J
+        endpoint = "/droneJ-data";  // Fetch Drone J's data
     }
 
     fetch(endpoint)
@@ -66,8 +58,17 @@ function updateOrCreateMarker(drone) {
         // Update existing marker for drone
         let newLatLng = new L.LatLng(drone.latitude, drone.longitude);
         droneMarkers[drone.call_sign].setLatLng(newLatLng);
-        droneMarkers[drone.call_sign].bindPopup(`Drone ${drone.call_sign}: ${drone.latitude.toFixed(4)}, ${drone.longitude.toFixed(4)}`).openPopup();
+        droneMarkers[drone.call_sign].bindPopup(`Drone ${drone.call_sign}: ${drone.latitude.toFixed(4)}, ${drone.longitude.toFixed(4)}`);
     }
+
+    // Ensure the map follows the drone by setting the view to the drone's position
+    map.setView([drone.latitude, drone.longitude], 15);
+
+    // Update the drone data box with current data
+    document.getElementById('drone-latitude').textContent = drone.latitude.toFixed(4);
+    document.getElementById('drone-longitude').textContent = drone.longitude.toFixed(4);
+    document.getElementById('drone-altitude').textContent = drone.altitude || 'N/A';
+    document.getElementById('drone-status').textContent = drone.status || 'Unknown';
 }
 
 // Refresh every 4 seconds

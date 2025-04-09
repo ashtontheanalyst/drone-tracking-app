@@ -16,9 +16,7 @@ comments = []
 # Drones is a list of dictionaries, which are collections of key-value pairs
 drones = [
     {"call_sign": "alpha", "latitude": 27.7123, "longitude": -97.3946},
-    {"call_sign": "bravo", "latitude": 27.7643, "longitude": -97.3239},
-    {"call_sign": "charlie", "latitude": 27.6801, "longitude": -97.2684},
-    {"call_sign": "delta", "latitude": 27.7092, "longitude": -97.3212}
+    {"call_sign": "bravo", "latitude": 27.7643, "longitude": -97.3239}
 ]
 #-----DRONE PAGES----------------------------------------------------------------------------------------------------------------#
 
@@ -49,26 +47,6 @@ def droneB_data():
 @views.route("/droneB")
 def droneB():
     return render_template("droneB.html")
-
-@views.route("/droneC-data")
-def droneC_data():
-    global drones
-    update_drone_positions()
-    return jsonify(drones[2])
-
-@views.route("/droneC")
-def droneC():
-    return render_template("droneC.html")
-
-@views.route("/droneD-data")
-def droneD_data():
-    global drones
-    update_drone_positions()
-    return jsonify(drones[3])
-
-@views.route("/droneD")
-def droneD():
-    return render_template("droneD.html")
 
 #-----DRONE TAKING JSON INPUT------------------------------------------------------------------------------------------------------#
 # This will be drone J for JSON, it will take in user inputted json through a curl

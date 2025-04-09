@@ -1,15 +1,27 @@
 {% extends "index.html" %}
 
-{% block title %}Drone 1{% endblock %}
+{% block title %}Drone A{% endblock %}
 
 {% block content %}
-    <h1 style="text-align: center;">Real-Time Aircraft Tracker</h1>
+    <h1 style="text-align: center;">Drone A In-Depth</h1>
             
-    <!-- Map Container -->
-    <div id="map"></div>
+    <!-- Add a unique class to the body or a container element -->
+    <div class="drone-specific-pages">
+        <!-- Map Container for Drone A -->
+        <div id="map"></div>
+
+        <!-- Drone Data Box with the correct CSS class -->
+        <div id="drone-data-box" class="drone-specific-data-box">
+            <h3>Data on Drone A</h3>
+            <p><strong>Latitude:</strong> <span id="drone-latitude">Loading...</span></p>
+            <p><strong>Longitude:</strong> <span id="drone-longitude">Loading...</span></p>
+            <p><strong>Altitude:</strong> <span id="drone-altitude">Loading...</span></p>
+            <p><strong>Status:</strong> <span id="drone-status">Loading...</span></p>
+        </div>
+    </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <!-- External map.js script -->
+    <!-- Custom JS for handling map of Drone A -->
     <script src="{{ url_for('static', filename='js/map.js') }}"></script>
 {% endblock %}
