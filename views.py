@@ -68,8 +68,8 @@ def droneJ():
 def update_drone_positions():
     global drones
     for drone in drones:
-        drone["latitude"] += random.uniform(-0.003, 0.003)  # Simulate small movement in lat
-        drone["longitude"] += random.uniform(-0.003, 0.003)  # Simulate small movement in lon
+        drone["latitude"] -= 0.001  # Simulate small movement in lat
+        drone["longitude"] += 0.0006  # Simulate small movement in lon
 
 #-----HOME PAGE---------------------------------------------------------------------------------------------------------------------#
 
