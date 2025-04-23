@@ -1,5 +1,5 @@
 // Initialize map with a default center
-var map = L.map('map').setView([27.7123, -97.3246], 11);
+var map = L.map('map').setView([27.7123, -97.3246], 14);
 
 // Initialize an empty object to store drone markers
 var droneMarkers = {};
@@ -50,12 +50,12 @@ function fetchDroneData() {
 
 // Function to update or create a drone marker
 function updateOrCreateMarker(drone) {
-    // Safely extract lat/lng from nested position object
-    const lat = drone.position?.latitude;
-    const lng = drone.position?.longitude;
+    // Check if the drone has a position object (for Drone J)
+    const lat = drone.position ? drone.position.latitude : drone.latitude;
+    const lng = drone.position ? drone.position.longitude : drone.longitude;
 
     if (typeof lat !== 'number' || typeof lng !== 'number') {
-        console.warn("Invalid coordinates for drone:", drone.call_sign, drone.position);
+        console.warn("Invalid coordinates for drone:", drone.call_sign, drone);
         return;
     }
 
@@ -81,8 +81,8 @@ function updateOrCreateMarker(drone) {
 
     if (latEl) latEl.textContent = lat.toFixed(4);
     if (lngEl) lngEl.textContent = lng.toFixed(4);
-    if (altEl) altEl.textContent = drone.position.altitude || 'N/A';
-    if (statusEl) statusEl.textContent = drone.airframe || 'Unknown';
+    if (altEl) altEl.textContent = drone.altitude || 'N/A';
+    if (statusEl) statusEl.textContent = drone.status || 'Unknown';
 }
 
 // Refresh every 4 seconds
