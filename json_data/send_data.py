@@ -10,7 +10,7 @@ from shapely.geometry import LineString, Point
 URL = "http://127.0.0.1:8000/data"
 HEADERS = {"Content-Type": "application/json"}
 
-JSON_DIR = "/home/goose/apps/andrewDrone/DroneTesting/json_data"
+JSON_DIR = "/home/goose/apps/DroneTracker/json_data"
 
 flight_paths = {
     "Disaster_City_Survey":       "Disaster_City_Survey_V2_converted.xlsx",

@@ -50,25 +50,39 @@ function fetchDroneData() {
 
 // Function to update or create a drone marker
 function updateOrCreateMarker(drone) {
+    // Safely extract lat/lng from nested position object
+    const lat = drone.position?.latitude;
+    const lng = drone.position?.longitude;
+
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+        console.warn("Invalid coordinates for drone:", drone.call_sign, drone.position);
+        return;
+    }
+
     if (!droneMarkers[drone.call_sign]) {
         // Create new marker for drone
-        droneMarkers[drone.call_sign] = L.marker([drone.latitude, drone.longitude], { icon: planeIcon }).addTo(map)
+        droneMarkers[drone.call_sign] = L.marker([lat, lng], { icon: planeIcon }).addTo(map)
             .bindPopup(`Drone ${drone.call_sign}`);
     } else {
         // Update existing marker for drone
-        let newLatLng = new L.LatLng(drone.latitude, drone.longitude);
+        let newLatLng = new L.LatLng(lat, lng);
         droneMarkers[drone.call_sign].setLatLng(newLatLng);
-        droneMarkers[drone.call_sign].bindPopup(`Drone ${drone.call_sign}: ${drone.latitude.toFixed(4)}, ${drone.longitude.toFixed(4)}`);
+        droneMarkers[drone.call_sign].bindPopup(`Drone ${drone.call_sign}: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
     }
 
     // Ensure the map follows the drone by setting the view to the drone's position
-    map.setView([drone.latitude, drone.longitude], 15);
+    map.setView([lat, lng], 15);
 
-    // Update the drone data box with current data
-    document.getElementById('drone-latitude').textContent = drone.latitude.toFixed(4);
-    document.getElementById('drone-longitude').textContent = drone.longitude.toFixed(4);
-    document.getElementById('drone-altitude').textContent = drone.altitude || 'N/A';
-    document.getElementById('drone-status').textContent = drone.status || 'Unknown';
+    // Update the drone data box with current data (if it exists)
+    const latEl = document.getElementById('drone-latitude');
+    const lngEl = document.getElementById('drone-longitude');
+    const altEl = document.getElementById('drone-altitude');
+    const statusEl = document.getElementById('drone-status');
+
+    if (latEl) latEl.textContent = lat.toFixed(4);
+    if (lngEl) lngEl.textContent = lng.toFixed(4);
+    if (altEl) altEl.textContent = drone.position.altitude || 'N/A';
+    if (statusEl) statusEl.textContent = drone.airframe || 'Unknown';
 }
 
 // Refresh every 4 seconds

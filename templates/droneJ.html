@@ -105,12 +105,15 @@
 
     // Update the graphs using the incoming data.
     function updateGraphs(data) {
-      // --- Graph 1: Update Airspeed and Altitude.
+      if (!data || !data.velocity || !data.position || !data.battery) {
+        console.warn("Incomplete data received:", data);
+        return; // Exit early if data is missing
+      }
+
       graph1Counter += 1;
       graph1Time.push(graph1Counter);
 
-      // Convert airspeed from m/s to knots.
-      let airspeed_knots = data.velocity.airspeed * 1.94384;
+      const airspeed_knots = data.velocity.airspeed * 1.94384;
       graph1Airspeed.push(airspeed_knots);
       graph1Altitude.push(data.position.altitude);
 
@@ -119,23 +122,23 @@
         y: [[airspeed_knots], [data.position.altitude]]
       }, [0, 1]);
 
-      // --- Graph 2: Append a new bar for the deviation history.
+      // Graph 2
       graph2Counter += 1;
-      let barColor = data.deviation > 25 ? 'red' : 'blue';
+      const barColor = data.deviation > 25 ? 'red' : 'blue';
       Plotly.extendTraces('graph2', {
         x: [[graph2Counter]],
         y: [[data.deviation]],
         'marker.color': [[barColor]]
       }, [0]);
 
-      // --- Graph 3: Update Battery Percentage.
+      // Graph 3
       graph3Counter += 1;
       graph3Time.push(graph3Counter);
-      graph3Battery.push(data.battery.percentage);
+      graph3Battery.push(data.battery.percentage || 0); // fallback if missing
 
       Plotly.extendTraces('graph3', {
         x: [[graph3Counter]],
-        y: [[data.battery.percentage]]
+        y: [[data.battery.percentage || 0]]
       }, [0]);
     }
 
