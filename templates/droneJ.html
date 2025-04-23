@@ -1,27 +1,165 @@
 {% extends "index.html" %}
-
 {% block title %}Drone J{% endblock %}
 
 {% block content %}
-    <h1 style="text-align: center;">Drone J In-Depth</h1>
-            
-    <!-- Add a unique class to the body or a container element -->
-    <div class="drone-specific-pages">
-        <!-- Map Container for Drone J -->
-        <div id="map"></div>
-
-        <!-- Drone Data Box with the correct CSS class -->
-        <div id="drone-data-box" class="drone-specific-data-box">
-            <h3>Data on Drone J</h3>
-            <p><strong>Latitude:</strong> <span id="drone-latitude">Loading...</span></p>
-            <p><strong>Longitude:</strong> <span id="drone-longitude">Loading...</span></p>
-            <p><strong>Altitude:</strong> <span id="drone-altitude">Loading...</span></p>
-            <p><strong>Status:</strong> <span id="drone-status">Loading...</span></p>
-        </div>
+  <h1 style="text-align: center;">Drone J In-Depth</h1>
+  <!-- Container with three vertical splits -->
+  <div id="droneJ-container" style="display: flex; height: 80vh;">
+    <!-- Left Column: Graphs -->
+    <div id="graphs-container" style="flex: 1; border-right: 1px solid #ccc; padding: 10px; overflow-y: auto;">
+      <div id="graph1" style="height: 250px;"></div>
+      <div id="graph2" style="height: 250px; margin-top: 20px;"></div>
+      <div id="graph3" style="height: 250px; margin-top: 20px;"></div>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <!-- Custom JS for handling map of Drone A -->
-    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+    <!-- Middle Column: Leaflet Map -->
+    <div id="map-container" style="flex: 1; border-right: 1px solid #ccc; padding: 10px;">
+      <div id="map" style="height: 100%;"></div>
+    </div>
+
+    <!-- Right Column: Telemetry Data -->
+    <div id="telemetry-container" style="flex: 1; padding: 10px; overflow-y: auto;">
+      <div id="drone-data-box" class="drone-specific-data-box">
+        <h3>Data on Drone J</h3>
+        <p><strong>Latitude:</strong> <span id="drone-latitude">Loading...</span></p>
+        <p><strong>Longitude:</strong> <span id="drone-longitude">Loading...</span></p>
+        <p><strong>Altitude:</strong> <span id="drone-altitude">Loading...</span></p>
+        <p><strong>Status:</strong> <span id="drone-status">Loading...</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- External Libraries -->
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Plotly JS -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+  <!-- Map Script -->
+  <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+
+  <!-- Real-time Graph Update Script -->
+  <script>
+    // Global variables for Graph 1 (Dual y-axis for Airspeed and Altitude)
+    let graph1Time = [];
+    let graph1Airspeed = [];
+    let graph1Altitude = [];
+    let graph1Counter = 0;
+
+    // Global variable for Graph 2 (Deviation history bar chart)
+    let graph2Counter = 1;
+
+    // Global variables for Graph 3 (Battery Percentage)
+    let graph3Time = [];
+    let graph3Battery = [];
+    let graph3Counter = 0;
+
+    // Initialization of all graphs.
+    function initGraphs() {
+      // Graph 1: Airspeed (left y-axis) and Altitude (right y-axis).
+      let graph1Layout = {
+        title: 'Airspeed and Altitude over Time',
+        xaxis: { title: 'Time (s)' },
+        yaxis: { title: 'Airspeed (knots)' },
+        yaxis2: { title: 'Altitude (ft)', overlaying: 'y', side: 'right' }
+      };
+
+      let graph1Data = [
+        { x: graph1Time, y: graph1Airspeed, mode: 'lines', name: 'Airspeed (knots)' },
+        { x: graph1Time, y: graph1Altitude, mode: 'lines', name: 'Altitude (ft)', yaxis: 'y2' }
+      ];
+
+      Plotly.newPlot('graph1', graph1Data, graph1Layout);
+
+      // Graph 2: Deviation history as a bar chart.
+      let graph2Layout = {
+        title: 'Deviation from Course (ft) History',
+        xaxis: { title: 'Update #' },
+        yaxis: { title: 'Deviation (ft)', range: [0, 50] }
+      };
+
+      // Start with an initial bar (update history will append new bars).
+      let initialColor = 'blue';
+      let graph2Data = [{
+        x: [graph2Counter],
+        y: [0],
+        type: 'bar',
+        marker: { color: [initialColor] }
+      }];
+
+      Plotly.newPlot('graph2', graph2Data, graph2Layout);
+
+      // Graph 3: Battery Percentage over Time.
+      let graph3Layout = {
+        title: 'Battery Percentage Over Time',
+        xaxis: { title: 'Time (s)' },
+        yaxis: { title: 'Battery (%)', range: [0, 100] }
+      };
+
+      let graph3Data = [
+        { x: graph3Time, y: graph3Battery, mode: 'lines+markers', name: 'Battery (%)' }
+      ];
+
+      Plotly.newPlot('graph3', graph3Data, graph3Layout);
+    }
+
+    // Update the graphs using the incoming data.
+    function updateGraphs(data) {
+      // --- Graph 1: Update Airspeed and Altitude.
+      graph1Counter += 1;
+      graph1Time.push(graph1Counter);
+
+      // Convert airspeed from m/s to knots.
+      let airspeed_knots = data.velocity.airspeed * 1.94384;
+      graph1Airspeed.push(airspeed_knots);
+      graph1Altitude.push(data.position.altitude);
+
+      Plotly.extendTraces('graph1', {
+        x: [[graph1Counter], [graph1Counter]],
+        y: [[airspeed_knots], [data.position.altitude]]
+      }, [0, 1]);
+
+      // --- Graph 2: Append a new bar for the deviation history.
+      graph2Counter += 1;
+      let barColor = data.deviation > 25 ? 'red' : 'blue';
+      Plotly.extendTraces('graph2', {
+        x: [[graph2Counter]],
+        y: [[data.deviation]],
+        'marker.color': [[barColor]]
+      }, [0]);
+
+      // --- Graph 3: Update Battery Percentage.
+      graph3Counter += 1;
+      graph3Time.push(graph3Counter);
+      graph3Battery.push(data.battery.percentage);
+
+      Plotly.extendTraces('graph3', {
+        x: [[graph3Counter]],
+        y: [[data.battery.percentage]]
+      }, [0]);
+    }
+
+    // Update the telemetry information shown on the page.
+    function updateTelemetry(data) {
+      document.getElementById('drone-latitude').textContent = data.position.latitude.toFixed(4);
+      document.getElementById('drone-longitude').textContent = data.position.longitude.toFixed(4);
+      document.getElementById('drone-altitude').textContent = data.position.altitude;
+      document.getElementById('drone-status').textContent = data.airframe;
+    }
+
+    // Fetch the latest drone data from the server.
+    function fetchDroneData() {
+      fetch("/droneJ-data")
+        .then(response => response.json())
+        .then(data => {
+          updateGraphs(data);
+          updateTelemetry(data);
+        })
+        .catch(error => console.error("Error fetching drone data:", error));
+    }
+
+    // Initialize graphs and set data update interval.
+    initGraphs();
+    setInterval(fetchDroneData, 1000);
+  </script>
 {% endblock %}

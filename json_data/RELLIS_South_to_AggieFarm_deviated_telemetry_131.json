@@ -1,0 +1,29 @@
+{
+    "call_sign": "RELLIS_South_to_AggieFarm",
+    "position": {
+        "latitude": 30.615974505171646,
+        "longitude": -96.51018663792522,
+        "altitude": 214.48
+    },
+    "velocity": {
+        "airspeed": 18.89,
+        "ground_speed": 18.89,
+        "verticle_speed": -0.59,
+        "units_speed": "MetersPerSecond",
+        "track": 224.2
+    },
+    "time_measured": "2025-01-27T12:22:11Z",
+    "battery": {
+        "voltage": 11.68,
+        "current": 9.24
+    },
+    "orientation": {
+        "pitch": -3.68,
+        "roll": 2.55,
+        "yaw": 25.42,
+        "pitch_rate": -0.89,
+        "roll_rate": -0.29,
+        "yaw_rate": -0.75
+    },
+    "airframe": "Quadcopter"
+}

@@ -1,0 +1,29 @@
+{
+    "call_sign": "RELLIS_West_to_Caldwell",
+    "position": {
+        "latitude": 30.570163595302446,
+        "longitude": -96.6353414445684,
+        "altitude": 324.71
+    },
+    "velocity": {
+        "airspeed": 22.43,
+        "ground_speed": 22.43,
+        "verticle_speed": 0.67,
+        "units_speed": "MetersPerSecond",
+        "track": 39.88
+    },
+    "time_measured": "2025-01-27T12:31:00Z",
+    "battery": {
+        "voltage": 11.64,
+        "current": 7.21
+    },
+    "orientation": {
+        "pitch": -3.85,
+        "roll": 1.22,
+        "yaw": 131.13,
+        "pitch_rate": 0.59,
+        "roll_rate": -0.84,
+        "yaw_rate": 0.37
+    },
+    "airframe": "Quadcopter"
+}

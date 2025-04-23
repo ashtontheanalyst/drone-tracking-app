@@ -1,0 +1,29 @@
+{
+    "call_sign": "Disaster_City_Survey",
+    "position": {
+        "latitude": 30.57718054147032,
+        "longitude": -96.34805933840049,
+        "altitude": 126.92
+    },
+    "velocity": {
+        "airspeed": 21.3,
+        "ground_speed": 21.3,
+        "verticle_speed": -0.68,
+        "units_speed": "MetersPerSecond",
+        "track": 18.7
+    },
+    "time_measured": "2025-01-27T12:11:00Z",
+    "battery": {
+        "voltage": 12.04,
+        "current": 8.83
+    },
+    "orientation": {
+        "pitch": 3.94,
+        "roll": 3.14,
+        "yaw": 295.71,
+        "pitch_rate": 0.32,
+        "roll_rate": -0.45,
+        "yaw_rate": -0.13
+    },
+    "airframe": "Quadcopter"
+}

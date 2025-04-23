@@ -1,0 +1,6 @@
+requests>=2.20.0
+numpy>=1.18.0
+pandas>=1.0.0
+shapely>=1.7.0
+openpyxl>=3.0.0
+

@@ -1,0 +1,29 @@
+{
+    "call_sign": "RELLIS_North_to_Hearne",
+    "position": {
+        "latitude": 30.885746933085166,
+        "longitude": -96.62172928961338,
+        "altitude": 123.85
+    },
+    "velocity": {
+        "airspeed": 16.07,
+        "ground_speed": 16.07,
+        "verticle_speed": 0.62,
+        "units_speed": "MetersPerSecond",
+        "track": 259.7
+    },
+    "time_measured": "2025-01-27T12:11:04Z",
+    "battery": {
+        "voltage": 11.61,
+        "current": 9.19
+    },
+    "orientation": {
+        "pitch": 1.13,
+        "roll": 2.95,
+        "yaw": 172.88,
+        "pitch_rate": -0.87,
+        "roll_rate": -0.63,
+        "yaw_rate": -0.49
+    },
+    "airframe": "Quadcopter"
+}

@@ -76,4 +76,3 @@ setInterval(fetchDroneData, 4000);
 
 // Initial fetch
 fetchDroneData();
-
