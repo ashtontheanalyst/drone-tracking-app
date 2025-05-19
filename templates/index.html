@@ -22,11 +22,12 @@
         <div class="dropdown">
             <button class="dropbtn">Drones ▾</button>
             <div class="dropdown-content">
-                <a href="/droneA">Drone A</a>
-                <a href="/droneB">Drone B</a>
-                <a href="/droneJ">Drone J</a>
+              {% for drone in drones %}
+                <a href="{{ url_for('views.drone_page', call_sign=drone) }}">Drone {{ drone}}</a>
+              {% endfor %}
             </div>
-        </div>
+          </div>
+          
 
         <button onclick="location.href='/data'">JSON Display Test</button>
         <button onclick="location.href='/inputting'">User Input Test</button>

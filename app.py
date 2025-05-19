@@ -2,7 +2,7 @@
 
 # Initializes/creates our flask app, must be done anytime you make one
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+
 app = Flask(__name__)
 
 #imports views from our views file, these are our web pages
