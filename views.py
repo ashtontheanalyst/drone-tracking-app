@@ -7,6 +7,14 @@
 # Redirect and url_for help redirect users to other pages
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 import random
+
+from collections import defaultdict
+import os
+import pandas as pd
+from shapely.geometry import LineString, Point
+
+
+
 views = Blueprint(__name__, "views") # Init/create the Blueprint and call it views
 
 # globals
@@ -18,6 +26,28 @@ ALLOWED_CALLSIGNS = {"Disaster_City_Survey", "RELLIS_South_to_AggieFarm", "RELLI
 latest_json = {}
 history_by_callsign = {}
 
+cumulative_dev_sum_map = defaultdict(float)#maps callsigns to cumulative dev
+
+# ——— FLIGHT PATH CONFIG ———
+FLIGHT_XLSX_DIR = "/Users/avery.austin/Desktop/IPG/CROW/DroneTracker/json_data"
+
+flight_paths = {
+    "Disaster_City_Survey":       "Disaster_City_Survey_V2_converted.xlsx",
+    "RELLIS_North_to_Hearne":     "RELLIS_NORTH_-_REL→Hearne_converted.xlsx",
+    "RELLIS_South_to_AggieFarm":  "RELLIS_SOUTH_-_REL_→_AggieFarm_converted.xlsx",
+    "RELLIS_West_to_Caldwell":    "RELLIS_WEST_-_REL_→_Caldwell_converted.xlsx"
+}
+
+# Preload LineStrings for each flight path
+path_lines = {}
+for name, xlsx in flight_paths.items():
+    full_path = os.path.join(FLIGHT_XLSX_DIR, xlsx)
+    df = (pd.read_excel(full_path, sheet_name="in")
+            [["Latitude", "Longitude", "Altitude"]]
+            .dropna()
+            .reset_index(drop=True))
+    coords = list(zip(df["Longitude"], df["Latitude"]))
+    path_lines[name] = LineString(coords)
 
 
 
@@ -54,6 +84,64 @@ def droneJ():
 API_KEY = "your-secret-api-key"  # TODO: move to environment variable later
 @views.route("/data", methods=["GET", "POST"])
 def get_data():
+    global latest_json, history_by_callsign
+
+    if request.method == "POST":
+        client_key = request.headers.get("X-API-KEY")
+        if client_key != API_KEY:
+            return jsonify({"error": "Unauthorized: Invalid API Key"}), 401
+
+        latest_json = request.get_json()
+        if not latest_json:
+            return jsonify({"error": "No JSON data received"}), 400
+
+        call_sign = latest_json.get("call_sign")
+        lat = latest_json.get("position", {}).get("latitude")
+        lon = latest_json.get("position", {}).get("longitude")
+
+        # Compute deviation from path
+        if call_sign in path_lines and lat is not None and lon is not None:
+            pt = Point(lon, lat)
+            line = path_lines[call_sign]
+            nearest = line.interpolate(line.project(pt))
+            dist_m = pt.distance(nearest) * 111000
+            dist_ft = dist_m * 3.28084
+            deviation = round(dist_ft, 2)
+            latest_json["deviation"] = deviation
+
+            # Accumulate deviation sum over 25 ft
+            if deviation > 25:
+                cumulative_dev_sum_map[call_sign] += (deviation - 25)
+            latest_json["cumulative_dev_sum"] = round(cumulative_dev_sum_map[call_sign], 2)
+
+        if call_sign:
+            history_by_callsign.setdefault(call_sign, []).append(latest_json)
+
+        return jsonify({"message": "JSON received and deviation calculated"}), 200
+
+    return render_template("displayJSON.html", data=latest_json, drones=ALLOWED_CALLSIGNS)
+
+
+#Gets data for each callsign at /data/callsign
+#will give error if no callsign at page
+
+@views.route("/data/<call_sign>", methods=["GET"])
+def data_by_callsign(call_sign):
+    global history_by_callsign
+
+    data_list = history_by_callsign.get(call_sign)
+    if data_list is None:
+        return jsonify({"error": "No data found for this call_sign"}), 404
+
+    return jsonify(data_list)
+
+
+#------------------------------------------------------------------------------------------------------------------------------------#
+
+'''
+4 data streams at once working
+@views.route("/data", methods=["GET", "POST"])
+def get_data():
     global latest_json, history_by_callsign  # Ensure we can update/get the variable
 
     if request.method == "POST":
@@ -81,23 +169,9 @@ def get_data():
     return render_template("displayJSON.html", data=latest_json, drones=ALLOWED_CALLSIGNS)
 
 
-#Gets data for each callsign at /data/callsign
-#will give error if no callsign at page
-
-@views.route("/data/<call_sign>", methods=["GET"])
-def data_by_callsign(call_sign):
-    global history_by_callsign
-
-    data_list = history_by_callsign.get(call_sign)
-    if data_list is None:
-        return jsonify({"error": "No data found for this call_sign"}), 404
-
-    return jsonify(data_list)
 
 
-#------------------------------------------------------------------------------------------------------------------------------------#
 
-'''
 # Drones is a list of dictionaries, which are collections of key-value pairs
 drones = [
     {"call_sign": "alpha", "latitude": 27.7123, "longitude": -97.3946},

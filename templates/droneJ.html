@@ -20,7 +20,6 @@
     </div>
 
   </div>
-
   <!-- External Libraries -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -28,27 +27,35 @@
 
   <!-- Real-time Graph Update Script -->
   <script>
-    const callSign = "{{ call_sign }}";//get the current callsign for html displaying
+    const callSign = "{{ call_sign }}"; // current callsign
 
+    // Graph 1: airspeed & altitude
     let graph1Time = [], graph1Airspeed = [], graph1Altitude = [], graph1Counter = 0;
-    let graph2Counter = 1;
-    let graph3Time = [], graph3Battery = [], graph3Counter = 0;
+    // Graph 2: instant deviation
+    let graph2Counter = 0;
+    // Graph 3: cumulative deviation over 25 ft
+    let graph3Time = [], graph3CumDevSum = [], graph3Counter = 0;
 
     function SingleJSONupdateGraphs(data) {
-      if (!data || !data.velocity || !data.position || !data.battery) return;
+      if (!data 
+       || !data.velocity 
+       || !data.position 
+       || data.cumulative_dev_sum === undefined
+      ) return;
 
-      graph1Counter += 1;
+      // Graph 1 updates
+      graph1Counter++;
       graph1Time.push(graph1Counter);
       const airspeed_knots = data.velocity.airspeed * 1.94384;
       graph1Airspeed.push(airspeed_knots);
       graph1Altitude.push(data.position.altitude);
-
       Plotly.extendTraces('graph1', {
         x: [[graph1Counter], [graph1Counter]],
         y: [[airspeed_knots], [data.position.altitude]]
       }, [0, 1]);
 
-      graph2Counter += 1;
+      // Graph 2 updates
+      graph2Counter++;
       const barColor = data.deviation > 25 ? 'red' : 'blue';
       Plotly.extendTraces('graph2', {
         x: [[graph2Counter]],
@@ -56,37 +63,41 @@
         'marker.color': [[barColor]]
       }, [0]);
 
-      graph3Counter += 1;
+      // Graph 3 updates
+      graph3Counter++;
       graph3Time.push(graph3Counter);
-      graph3Battery.push(data.battery.percentage || 0);
+      graph3CumDevSum.push(data.cumulative_dev_sum);
       Plotly.extendTraces('graph3', {
         x: [[graph3Counter]],
-        y: [[data.battery.percentage || 0]]
+        y: [[data.cumulative_dev_sum]]
       }, [0]);
     }
-
 
     function SLOWupdateGraphs(dataArray) {
       if (!Array.isArray(dataArray) || dataArray.length === 0) {
         console.warn("Empty or invalid data");
         return;
       }
-
       dataArray.forEach(data => {
-        if (!data || !data.velocity || !data.position || !data.battery) return;
+        if (!data 
+         || !data.velocity 
+         || !data.position 
+         || data.cumulative_dev_sum === undefined
+        ) return;
 
-        graph1Counter += 1;
+        // Graph 1
+        graph1Counter++;
         graph1Time.push(graph1Counter);
         const airspeed_knots = data.velocity.airspeed * 1.94384;
         graph1Airspeed.push(airspeed_knots);
         graph1Altitude.push(data.position.altitude);
-
         Plotly.extendTraces('graph1', {
           x: [[graph1Counter], [graph1Counter]],
           y: [[airspeed_knots], [data.position.altitude]]
         }, [0, 1]);
 
-        graph2Counter += 1;
+        // Graph 2
+        graph2Counter++;
         const barColor = data.deviation > 25 ? 'red' : 'blue';
         Plotly.extendTraces('graph2', {
           x: [[graph2Counter]],
@@ -94,13 +105,13 @@
           'marker.color': [[barColor]]
         }, [0]);
 
-        graph3Counter += 1;
+        // Graph 3
+        graph3Counter++;
         graph3Time.push(graph3Counter);
-        const batteryPct = data.battery.percentage || 0;
-        graph3Battery.push(batteryPct);
+        graph3CumDevSum.push(data.cumulative_dev_sum);
         Plotly.extendTraces('graph3', {
           x: [[graph3Counter]],
-          y: [[batteryPct]]
+          y: [[data.cumulative_dev_sum]]
         }, [0]);
       });
     }
@@ -109,19 +120,23 @@
       const time = dataArray.map((_, i) => i + 1);
       const airspeeds = dataArray.map(d => d.velocity.airspeed * 1.94384);
       const altitudes = dataArray.map(d => d.position.altitude);
-      const battery = dataArray.map(d => d.battery.percentage || 0);
       const deviations = dataArray.map(d => d.deviation);
+      const cumDevs    = dataArray.map(d => d.cumulative_dev_sum || 0);
       const deviationColors = deviations.map(d => d > 25 ? 'red' : 'blue');
 
-      graph1Time = time.slice();
-      graph1Airspeed = airspeeds.slice();
-      graph1Altitude = altitudes.slice();
-      graph1Counter = time.length;
+      // initialize graph 1 data
+      graph1Time      = time.slice();
+      graph1Airspeed  = airspeeds.slice();
+      graph1Altitude  = altitudes.slice();
+      graph1Counter   = time.length;
 
-      graph2Counter = time.length;
-      graph3Time = time.slice();
-      graph3Battery = battery.slice();
-      graph3Counter = time.length;
+      // initialize graph 2 data
+      graph2Counter   = time.length;
+
+      // initialize graph 3 data
+      graph3Time      = time.slice();
+      graph3CumDevSum = cumDevs.slice();
+      graph3Counter   = time.length;
 
       Plotly.newPlot('graph1', [
         { x: time, y: airspeeds, mode: 'lines', name: 'Airspeed (knots)' },
@@ -130,7 +145,7 @@
         title: 'Airspeed and Altitude over Time',
         xaxis: { title: 'Time (s)' },
         yaxis: { title: 'Airspeed (knots)' },
-        yaxis2: { title: 'Altitude (ft)', overlaying: 'y', side: 'right' }
+        yaxis2:{ title: 'Altitude (ft)', overlaying:'y', side:'right' }
       });
 
       Plotly.newPlot('graph2', [{
@@ -140,72 +155,38 @@
         marker: { color: deviationColors }
       }], {
         title: 'Deviation from Course (ft)',
-        xaxis: { title: 'Update #' },
-        yaxis: { title: 'Deviation (ft)', range: [0, 50] }
+        xaxis:{ title:'Update #' },
+        yaxis:{ title:'Deviation (ft)', range:[0,50] }
       });
 
       Plotly.newPlot('graph3', [
-        { x: time, y: battery, mode: 'lines+markers', name: 'Battery (%)' }
+        { x: time, y: cumDevs, mode: 'lines+markers', name: 'Cumulative Deviation > 25 ft' }
       ], {
-        title: 'Battery % Over Time',
-        xaxis: { title: 'Time (s)' },
-        yaxis: { title: 'Battery (%)', range: [0, 100] }
+        title: 'Cumulative Deviation ≥ 25 ft over Time',
+        xaxis:{ title:'Time (s)' },
+        yaxis:{ title:'Total Deviation (ft)', autorange:true }
       });
     }
 
-
-    /*
-    function fetchDroneData() {
-      fetch("/droneJ-data")
-        .then(res => res.json())
-        .then(data => updateGraphs(data))
-        .catch(err => console.error("Error fetching drone data:", err));
-    }
-    */
-    
-    //Grabs entire list of jsons from /data/callsign on the first load
-    const start = performance.now();
-    function fetchDroneData(callSign) {
+    // Initial load
+    loadHistoricalGraph([]);
+    // Fetch full history once
     fetch(`/data/${callSign}`)
-      .then(res => {
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        return res.json();
-      })
-      .then(data => {
-        //console.log(`Data for ${callSign}:`, data); 
-        //updateGraphs(data);
-        loadHistoricalGraph(data);
-        
-      })
-      .catch(err => console.error(`Error fetching drone data for ${callSign}:`, err));
-    }
-    const end = performance.now();
+      .then(res => res.json())
+      .then(data => loadHistoricalGraph(data))
+      .catch(err => console.error(err));
 
-    
-    loadHistoricalGraph([]);//calls load graph with empty array to display graph if no data sent yet
-    fetchDroneData(callSign);
-    
-    //Fetch latest drone data json and update graphs every second
+    // Poll for new data every second
     setInterval(() => {
       fetch(`/data/${callSign}`)
         .then(res => res.json())
         .then(dataArray => {
           if (!Array.isArray(dataArray) || dataArray.length === 0) return;
-          const start2 = performance.now();
-          const newPoints = dataArray.slice(graph1Counter);  // only the unseen aka after last point graphed in graph 1
-          const end1 = performance.now();
+          const newPoints = dataArray.slice(graph1Counter);
           newPoints.forEach(point => SingleJSONupdateGraphs(point));
-          const end2 = performance.now();
-          console.log(`Big JSON load ${(end - start).toFixed(1)}ms`);
-          console.log(`New Points ${(end1 - start2).toFixed(1)}ms`);
-          console.log(`New Points Plotted ${(end2 - start2).toFixed(1)}ms`);
-          console.log(`Data:`, newPoints); 
-
-        });
+        })
+        .catch(err => console.error(err));
     }, 1000);
-
-   // setInterval(() => fetchDroneData("Disaster_City_Survey"), 1000);
 
   </script>
 {% endblock %}
-
