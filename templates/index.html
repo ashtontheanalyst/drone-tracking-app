@@ -8,6 +8,9 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
+    <!-- Plotly for graphs -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
     <!-- Link to the external CSS file -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 
@@ -27,7 +30,6 @@
               {% endfor %}
             </div>
           </div>
-          
 
         <button onclick="location.href='/data'">JSON Display Test</button>
         <button onclick="location.href='/inputting'">User Input Test</button>
@@ -48,6 +50,93 @@
             <div id="drone-data-container" class="drone-data-container">
                 <!-- Dynamically populated data boxes will go here -->
             </div>
+
+            <!-- New: Drone Graphs for Homepage -->
+            <h2 style="text-align:center;">Airspeed &amp; Altitude</h2>
+            <div id="homepage-graphs" style="display: flex; flex-wrap: wrap; justify-content: space-around;">
+              {% for drone in drones %}
+                <div class="graph-box" style="width: 45%; margin: 20px;">
+                  <h3>Drone {{ drone }}</h3>
+                  <div id="graph-home-{{ drone }}" style="height: 300px;"></div>
+                </div>
+              {% endfor %}
+            </div>
+
+            <script>
+              // 1) grab the drone array safely
+              const droneList = JSON.parse('{{ drones | tojson | safe }}');
+
+              // 2) hold per-drone state
+              const graphState = {};
+
+              // 3) create empty charts for each drone
+              droneList.forEach(callSign => {
+                graphState[callSign] = { counter: 0 };
+
+                Plotly.newPlot(
+                  `graph-home-${callSign}`,
+                  [
+                    { x: [], y: [], mode: 'lines', name: 'Airspeed (knots)' },
+                    { x: [], y: [], mode: 'lines', name: 'Altitude (ft)', yaxis: 'y2' }
+                  ],
+                  {
+                    title: `Airspeed & Altitude — ${callSign}`,
+                    xaxis: { title: 'Time (s)' },
+                    yaxis: { title: 'Airspeed (knots)' },
+                    yaxis2: { title: 'Altitude (ft)', overlaying: 'y', side: 'right' }
+                  }
+                );
+
+                // 4) load full history once
+                fetch(`/data/${callSign}`)
+                  .then(res => res.json())
+                  .then(data => {
+                    if (!Array.isArray(data)) return;
+                    const times  = data.map((_, i) => i + 1);
+                    const speeds = data.map(d => d.velocity.airspeed * 1.94384);
+                    const alts   = data.map(d => d.position.altitude);
+
+                    graphState[callSign].counter = times.length;
+
+                    Plotly.extendTraces(
+                      `graph-home-${callSign}`,
+                      { x: [times, times], y: [speeds, alts] },
+                      [0, 1]
+                    );
+                  })
+                  .catch(console.error);
+              });
+
+              // 5) poll every second for new points
+              setInterval(() => {
+                droneList.forEach(callSign => {
+                  fetch(`/data/${callSign}`)
+                    .then(res => res.json())
+                    .then(data => {
+                      const state = graphState[callSign];
+                      if (!Array.isArray(data) || data.length <= state.counter) return;
+
+                      const newPoints = data.slice(state.counter);
+                      newPoints.forEach(pt => {
+                        state.counter++;
+                        const t  = state.counter;
+                        const sp = pt.velocity.airspeed * 1.94384;
+                        const al = pt.position.altitude;
+
+                        Plotly.extendTraces(
+                          `graph-home-${callSign}`,
+                          {
+                            x: [[t], [t]],
+                            y: [[sp], [al]]
+                          },
+                          [0, 1]
+                        );
+                      });
+                    })
+                    .catch(console.error);
+                });
+              }, 1000);
+            </script>
 
             <!-- Leaflet and Custom JS -->
             <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
