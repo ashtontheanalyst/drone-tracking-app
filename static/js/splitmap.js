@@ -15,58 +15,57 @@ L.tileLayer('https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=3TdwoUdL4
 
 // Plane icon for markers
 var planeIcon = L.icon({
-    iconUrl: 'static/images/plane-icon.png',
+    iconUrl: '/static/images/plane-icon.png', // leading slash
     iconSize: [32, 32],
     iconAnchor: [16, 16],
     popupAnchor: [0, -16]
 });
 
-var droneMarkers = {};         // For all drones on left map
-var singleDroneMarker = null;  // For selected drone on right map
-var selectedDroneCallsign = null; // Store currently selected drone
+// your four callsigns passed in via Jinja
+const callsigns = JSON.parse('{{ drones | tojson | safe }}');
 
-// Fetch all drone data for the left map
-function fetchAllDrones() {
-    fetch('/drone-data')
-        .then(res => res.json())
-        .then(data => {
-            if (Array.isArray(data)) {
-                data.forEach(drone => {
-                    if (!droneMarkers[drone.call_sign]) {
-                        // Create new marker
-                        let marker = L.marker([drone.latitude, drone.longitude], { icon: planeIcon }).addTo(mapAll);
-                        marker.bindPopup(`Drone ${drone.call_sign}`);
-                        marker.on('click', () => {
-                            selectedDroneCallsign = drone.call_sign;
-                            updateSingleDrone(drone);
-                        });
-                        droneMarkers[drone.call_sign] = marker;
+var droneMarkers      = {};  // markers on the all-drones map
+var singleDroneMarker = null;
+var selectedCallSign  = null;
+
+// place empty markers for each drone on the left map
+callsigns.forEach(cs => {
+    const m = L.marker([0, 0], { icon: planeIcon })
+        .addTo(mapAll)
+        .bindPopup(`Drone ${cs}`)
+        .on('click', () => {
+            selectedCallSign = cs;
+        });
+    droneMarkers[cs] = m;
+});
+
+// fetch & update both maps every second
+function updateMaps() {
+    callsigns.forEach(cs => {
+        fetch(`/data/${cs}`)
+            .then(res => res.json())
+            .then(history => {
+                if (!Array.isArray(history) || history.length === 0) return;
+                const last = history[history.length - 1];
+                const { latitude: lat, longitude: lng } = last.position;
+
+                // move left-map marker
+                droneMarkers[cs].setLatLng([lat, lng]);
+
+                // if this is the clicked drone, update the right map
+                if (cs === selectedCallSign) {
+                    if (!singleDroneMarker) {
+                        singleDroneMarker = L.marker([lat, lng], { icon: planeIcon }).addTo(mapSingle);
                     } else {
-                        // Update existing marker
-                        droneMarkers[drone.call_sign].setLatLng([drone.latitude, drone.longitude]);
+                        singleDroneMarker.setLatLng([lat, lng]);
                     }
-
-                    // If it's the selected drone, update the right map
-                    if (drone.call_sign === selectedDroneCallsign) {
-                        updateSingleDrone(drone);
-                    }
-                });
-            }
-        })
-        .catch(err => console.error("Error fetching all drones:", err));
+                    mapSingle.setView([lat, lng], 15);
+                }
+            })
+            .catch(console.error);
+    });
 }
 
-// Update the right map with a specific drone
-function updateSingleDrone(drone) {
-    if (!singleDroneMarker) {
-        singleDroneMarker = L.marker([drone.latitude, drone.longitude], { icon: planeIcon }).addTo(mapSingle);
-    } else {
-        singleDroneMarker.setLatLng([drone.latitude, drone.longitude]);
-    }
+setInterval(updateMaps, 1000);
+updateMaps();  // initial load
 
-    mapSingle.setView([drone.latitude, drone.longitude], 15);
-}
-
-// Start updating every 4 seconds
-setInterval(fetchAllDrones, 4000);
-fetchAllDrones(); // Initial load
