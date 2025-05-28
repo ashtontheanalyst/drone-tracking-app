@@ -135,6 +135,15 @@ def data_by_callsign(call_sign):
 
     return jsonify(data_list)
 
+#clear history button
+@views.route("/reset_history", methods=["POST"])
+def reset_history():
+    global history_by_callsign, cumulative_dev_sum_map, latest_json
+    history_by_callsign.clear()
+    cumulative_dev_sum_map.clear()
+    latest_json.clear()
+    return redirect(url_for("views.home"))
+
 
 #------------------------------------------------------------------------------------------------------------------------------------#
 

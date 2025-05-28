@@ -7,6 +7,7 @@ from collections import defaultdict
 
 # ——— CONFIGURATION ———
 URL = "http://127.0.0.1:8000/data"
+#URL = "https://ashtonrwsmith.pythonanywhere.com/data"
 HEADERS = {
     "Content-Type": "application/json",
     "X-API-KEY": "your-secret-api-key"

@@ -31,8 +31,26 @@
             </div>
           </div>
 
-        <button onclick="location.href='/data'">JSON Display Test</button>
-        <button onclick="location.href='/inputting'">User Input Test</button>
+          <!-- Trigger button -->
+          <button onclick="document.getElementById('confirmModal').style.display='block'">
+            Delete History
+          </button>
+
+          <!-- Modal dialog -->
+          <div id="confirmModal" style="display:none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); background: white; border: 1px solid #aaa; padding: 20px; box-shadow: 0px 0px 10px rgba(0,0,0,0.3); z-index: 999;">
+            <p>Are you sure you want to delete all drone history?</p>
+            <button onclick="confirmReset()" style="margin-right: 10px;">Yes</button>
+            <button onclick="document.getElementById('confirmModal').style.display='none'">Cancel</button>
+          </div>
+
+          <script>
+            function confirmReset() {
+              fetch('/reset_history', { method: 'POST' })
+                .then(() => location.reload());
+            }
+          </script>
+
+        </form>
     </div>
 
     <!-- Page-Specific Content -->
@@ -40,12 +58,12 @@
         {% block content %}
             <h1 style="text-align: center;">Real-Time Aircraft Tracker</h1>
 
-            <!-- Two side-by-side maps -->
+            <!-- one side-by-side maps -->
             <div class="map-container">
                 <div id="map-all" class="map-box"></div>
-                <div id="map-single" class="map-box"></div>
+                <!--<div id="map-single" class="map-box"></div> -->
             </div>
-
+            
             <!-- Drone data boxes below the maps -->
             <div id="drone-data-container" class="drone-data-container">
                 <!-- Dynamically populated data boxes will go here -->
@@ -139,9 +157,15 @@
             </script>
 
             <!-- Leaflet and Custom JS -->
+             
+          
+            <script>
+              window.droneCallSigns = JSON.parse('{{ drones | tojson | safe }}');
+            </script>
+            
             <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
             <script src="{{ url_for('static', filename='js/splitmap.js') }}"></script>
-            <script src="{{ url_for('static', filename='js/droneData.js') }}"></script>
+            
         {% endblock %}
     </div>
 
