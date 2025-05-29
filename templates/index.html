@@ -1,173 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}BCDC Drone Tracker{% endblock %}</title>
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}BCDC Drone Tracker{% endblock %}</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
-    <!-- Plotly for graphs -->
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <!-- Plotly for graphs -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
-    <!-- Link to the external CSS file -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-
+  <!-- Link to the external CSS file -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-    <!-- Header Navigation Bar -->
-    <div class="header">
-        <div class="nav-title">BCDC Drone Tracker</div>
-        
-        <button onclick="location.href='/'">Home</button>
+  <!-- Header Navigation Bar -->
+  <div class="header">
+    <div class="nav-title">BCDC Drone Tracker</div>
+    <button onclick="location.href='/'">Home</button>
+    <div class="dropdown">
+      <button class="dropbtn">Drones ▾</button>
+      <div class="dropdown-content">
+        {% for drone in drones %}
+          <a href="{{ url_for('views.drone_page', call_sign=drone) }}">Drone {{ drone }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    <button onclick="document.getElementById('confirmModal').style.display='block'">Delete History</button>
+    <div id="confirmModal" style="display:none; position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%); background:white; border:1px solid #aaa; padding:20px; box-shadow:0 0 10px rgba(0,0,0,0.3); z-index:999;">
+      <p>Are you sure you want to delete all drone history?</p>
+      <button onclick="confirmReset()" style="margin-right:10px;">Yes</button>
+      <button onclick="document.getElementById('confirmModal').style.display='none'">Cancel</button>
+    </div>
+    <script>
+      function confirmReset() {
+        fetch('/reset_history', { method: 'POST' })
+          .then(() => location.reload());
+      }
+    </script>
+  </div>
 
-        <div class="dropdown">
-            <button class="dropbtn">Drones ▾</button>
-            <div class="dropdown-content">
-              {% for drone in drones %}
-                <a href="{{ url_for('views.drone_page', call_sign=drone) }}">Drone {{ drone}}</a>
-              {% endfor %}
+  <!-- Page-Specific Content -->
+  <div>
+    {% block content %}
+      <h1 style="text-align: center;">Real-Time Aircraft Tracker</h1>
+
+      <!-- Maps -->
+      <div class="map-container">
+        <div id="map-all" class="map-box"></div>
+      </div>
+      <div id="drone-data-container" class="drone-data-container"></div>
+
+      <!-- Graphs with live counters -->
+      <h2 style="text-align:center;">Airspeed &amp; Altitude</h2>
+      <div id="homepage-graphs" style="display:flex; flex-wrap:wrap; justify-content:space-around;">
+        {% for drone in drones %}
+          <div class="graph-box" style="width:45%; margin:20px; position:relative;">
+            <h3>Drone {{ drone }}</h3>
+            <!-- LIVE COUNTER BOX -->
+            <div class="counter-box" style="position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.8); padding:6px; border-radius:5px; text-align:right;">
+              <p style="margin:0;font-size:14px;">Airspeed: <span id="ctr-{{ drone }}-airspeed">--</span> kt</p>
+              <p style="margin:0;font-size:14px;">Altitude: <span id="ctr-{{ drone }}-altitude">--</span> ft</p>
             </div>
+            <div id="graph-home-{{ drone }}" style="height:300px;"></div>
           </div>
+        {% endfor %}
+      </div>
 
-          <!-- Trigger button -->
-          <button onclick="document.getElementById('confirmModal').style.display='block'">
-            Delete History
-          </button>
+      <script>
+        const droneList = JSON.parse('{{ drones | tojson | safe }}');
+        const graphState = {};
 
-          <!-- Modal dialog -->
-          <div id="confirmModal" style="display:none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); background: white; border: 1px solid #aaa; padding: 20px; box-shadow: 0px 0px 10px rgba(0,0,0,0.3); z-index: 999;">
-            <p>Are you sure you want to delete all drone history?</p>
-            <button onclick="confirmReset()" style="margin-right: 10px;">Yes</button>
-            <button onclick="document.getElementById('confirmModal').style.display='none'">Cancel</button>
-          </div>
+        // helper to update the live counters
+        function updateHomepageCounters(callSign, airspeed, altitude) {
+          document.getElementById(`ctr-${callSign}-airspeed`).textContent = airspeed.toFixed(2);
+          document.getElementById(`ctr-${callSign}-altitude`).textContent = altitude.toFixed(0);
+        }
 
-          <script>
-            function confirmReset() {
-              fetch('/reset_history', { method: 'POST' })
-                .then(() => location.reload());
+        // initialize charts and load history
+        droneList.forEach(callSign => {
+          graphState[callSign] = { counter: 0 };
+
+          // create empty Plotly chart
+          Plotly.newPlot(
+            `graph-home-${callSign}`,
+            [
+              { x: [], y: [], mode: 'lines', name: 'Airspeed (knots)' },
+              { x: [], y: [], mode: 'lines', name: 'Altitude (ft)', yaxis: 'y2' }
+            ],
+            {
+              title: `Airspeed & Altitude — ${callSign}`,
+              xaxis: { title: 'Time (s)' },
+              yaxis: { title: 'Airspeed (knots)' },
+              yaxis2: { title: 'Altitude (ft)', overlaying: 'y', side: 'right' }
             }
-          </script>
+          );
 
-        </form>
-    </div>
+          // load full history and set initial counters
+          fetch(`/data/${callSign}`)
+            .then(res => res.json())
+            .then(data => {
+              if (!Array.isArray(data)) return;
+              const times  = data.map((_, i) => i + 1);
+              const speeds = data.map(d => d.velocity.airspeed * 1.94384);
+              const alts   = data.map(d => d.position.altitude);
 
-    <!-- Page-Specific Content -->
-    <div>
-        {% block content %}
-            <h1 style="text-align: center;">Real-Time Aircraft Tracker</h1>
+              graphState[callSign].counter = times.length;
 
-            <!-- one side-by-side maps -->
-            <div class="map-container">
-                <div id="map-all" class="map-box"></div>
-                <!--<div id="map-single" class="map-box"></div> -->
-            </div>
-            
-            <!-- Drone data boxes below the maps -->
-            <div id="drone-data-container" class="drone-data-container">
-                <!-- Dynamically populated data boxes will go here -->
-            </div>
+              Plotly.extendTraces(
+                `graph-home-${callSign}`,
+                { x: [times, times], y: [speeds, alts] },
+                [0, 1]
+              );
 
-            <!-- New: Drone Graphs for Homepage -->
-            <h2 style="text-align:center;">Airspeed &amp; Altitude</h2>
-            <div id="homepage-graphs" style="display: flex; flex-wrap: wrap; justify-content: space-around;">
-              {% for drone in drones %}
-                <div class="graph-box" style="width: 45%; margin: 20px;">
-                  <h3>Drone {{ drone }}</h3>
-                  <div id="graph-home-{{ drone }}" style="height: 300px;"></div>
-                </div>
-              {% endfor %}
-            </div>
+              if (speeds.length) {
+                updateHomepageCounters(callSign, speeds[speeds.length - 1], alts[alts.length - 1]);
+              }
+            })
+            .catch(console.error);
+        });
 
-            <script>
-              // 1) grab the drone array safely
-              const droneList = JSON.parse('{{ drones | tojson | safe }}');
+        // poll every second for new points and update counters
+        setInterval(() => {
+          droneList.forEach(callSign => {
+            fetch(`/data/${callSign}`)
+              .then(res => res.json())
+              .then(data => {
+                const state = graphState[callSign];
+                if (!Array.isArray(data) || data.length <= state.counter) return;
 
-              // 2) hold per-drone state
-              const graphState = {};
+                const newPoints = data.slice(state.counter);
+                newPoints.forEach(pt => {
+                  state.counter++;
+                  const t  = state.counter;
+                  const sp = pt.velocity.airspeed * 1.94384;
+                  const al = pt.position.altitude;
 
-              // 3) create empty charts for each drone
-              droneList.forEach(callSign => {
-                graphState[callSign] = { counter: 0 };
+                  Plotly.extendTraces(
+                    `graph-home-${callSign}`,
+                    { x: [[t], [t]], y: [[sp], [al]] },
+                    [0, 1]
+                  );
 
-                Plotly.newPlot(
-                  `graph-home-${callSign}`,
-                  [
-                    { x: [], y: [], mode: 'lines', name: 'Airspeed (knots)' },
-                    { x: [], y: [], mode: 'lines', name: 'Altitude (ft)', yaxis: 'y2' }
-                  ],
-                  {
-                    title: `Airspeed & Altitude — ${callSign}`,
-                    xaxis: { title: 'Time (s)' },
-                    yaxis: { title: 'Airspeed (knots)' },
-                    yaxis2: { title: 'Altitude (ft)', overlaying: 'y', side: 'right' }
-                  }
-                );
-
-                // 4) load full history once
-                fetch(`/data/${callSign}`)
-                  .then(res => res.json())
-                  .then(data => {
-                    if (!Array.isArray(data)) return;
-                    const times  = data.map((_, i) => i + 1);
-                    const speeds = data.map(d => d.velocity.airspeed * 1.94384);
-                    const alts   = data.map(d => d.position.altitude);
-
-                    graphState[callSign].counter = times.length;
-
-                    Plotly.extendTraces(
-                      `graph-home-${callSign}`,
-                      { x: [times, times], y: [speeds, alts] },
-                      [0, 1]
-                    );
-                  })
-                  .catch(console.error);
-              });
-
-              // 5) poll every second for new points
-              setInterval(() => {
-                droneList.forEach(callSign => {
-                  fetch(`/data/${callSign}`)
-                    .then(res => res.json())
-                    .then(data => {
-                      const state = graphState[callSign];
-                      if (!Array.isArray(data) || data.length <= state.counter) return;
-
-                      const newPoints = data.slice(state.counter);
-                      newPoints.forEach(pt => {
-                        state.counter++;
-                        const t  = state.counter;
-                        const sp = pt.velocity.airspeed * 1.94384;
-                        const al = pt.position.altitude;
-
-                        Plotly.extendTraces(
-                          `graph-home-${callSign}`,
-                          {
-                            x: [[t], [t]],
-                            y: [[sp], [al]]
-                          },
-                          [0, 1]
-                        );
-                      });
-                    })
-                    .catch(console.error);
+                  updateHomepageCounters(callSign, sp, al);
                 });
-              }, 1000);
-            </script>
+              })
+              .catch(console.error);
+          });
+        }, 1000);
+      </script>
 
-            <!-- Leaflet and Custom JS -->
-             
-          
-            <script>
-              window.droneCallSigns = JSON.parse('{{ drones | tojson | safe }}');
-            </script>
-            
-            <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-            <script src="{{ url_for('static', filename='js/splitmap.js') }}"></script>
-            
-        {% endblock %}
-    </div>
-
+      <!-- Leaflet and Custom JS -->
+      <script>
+        window.droneCallSigns = JSON.parse('{{ drones | tojson | safe }}');
+      </script>
+      <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+      <script src="{{ url_for('static', filename='js/splitmap.js') }}"></script>
+    {% endblock %}
+  </div>
 </body>
 </html>
+
