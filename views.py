@@ -13,6 +13,12 @@ import os
 import pandas as pd
 from shapely.geometry import LineString, Point
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+# Get the API key from the environment
+API_KEY = os.getenv("API_KEY")
 
 
 views = Blueprint(__name__, "views") # Init/create the Blueprint and call it views
@@ -81,7 +87,7 @@ def droneJ():
 # This will take in JSON data and then post it on the /data page
 # Use the testFile.py file to see if the site can get a JSON POST request
 # Define your secret key securely in production
-API_KEY = "your-secret-api-key"  # TODO: move to environment variable later
+#API_KEY = "your-secret-api-key"  
 @views.route("/data", methods=["GET", "POST"])
 def get_data():
     global latest_json, history_by_callsign

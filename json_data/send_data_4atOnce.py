@@ -4,13 +4,21 @@ import json
 import time
 import requests
 from collections import defaultdict
+from dotenv import load_dotenv
 
 # ——— CONFIGURATION ———
 URL = "http://127.0.0.1:8000/data"
 #URL = "https://ashtonrwsmith.pythonanywhere.com/data"
+
+# Load environment variables from .env file
+load_dotenv()
+# Get the API key from the environment
+API_KEY = os.getenv("API_KEY")
+
+
 HEADERS = {
     "Content-Type": "application/json",
-    "X-API-KEY": "your-secret-api-key"
+    "X-API-KEY": API_KEY
 }
 JSON_DIR = "/Users/avery.austin/Desktop/IPG/CROW/DroneTracker/json_data"
 
