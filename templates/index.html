@@ -1,10 +1,11 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{% block title %}BCDC Drone Tracker{% endblock %}</title>
-  
+
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
@@ -12,7 +13,7 @@
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
   <!-- Link to the external CSS file -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}"/>
 </head>
 <body>
   <!-- Header Navigation Bar -->
@@ -27,10 +28,14 @@
         {% endfor %}
       </div>
     </div>
-    <button onclick="document.getElementById('confirmModal').style.display='block'">Delete History</button>
-    <div id="confirmModal" style="display:none; position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%); background:white; border:1px solid #aaa; padding:20px; box-shadow:0 0 10px rgba(0,0,0,0.3); z-index:999;">
+    <!-- Trigger button -->
+    <button onclick="document.getElementById('confirmModal').style.display='block'">
+      Delete History
+    </button>
+    <!-- Modal dialog -->
+    <div id="confirmModal" style="display:none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); background: white; border: 1px solid #aaa; padding: 20px; box-shadow: 0px 0px 10px rgba(0,0,0,0.3); z-index: 999;">
       <p>Are you sure you want to delete all drone history?</p>
-      <button onclick="confirmReset()" style="margin-right:10px;">Yes</button>
+      <button onclick="confirmReset()" style="margin-right: 10px;">Yes</button>
       <button onclick="document.getElementById('confirmModal').style.display='none'">Cancel</button>
     </div>
     <script>
@@ -41,29 +46,39 @@
     </script>
   </div>
 
+  <!-- expose JS globals -->
+  <script>
+    window.droneCallSigns = JSON.parse('{{ drones | tojson | safe }}');
+  </script>
+
   <!-- Page-Specific Content -->
   <div>
     {% block content %}
       <h1 style="text-align: center;">Real-Time Aircraft Tracker</h1>
 
-      <!-- Maps -->
-      <div class="map-container">
+      <!-- Two side-by-side maps -->
+      <div class="splitmap-container">
         <div id="map-all" class="map-box"></div>
+        <div id="map-single" class="map-box"></div>
       </div>
-      <div id="drone-data-container" class="drone-data-container"></div>
 
-      <!-- Graphs with live counters -->
+      <!-- Drone data boxes below the maps -->
+      <div id="drone-data-container" class="drone-data-container">
+        <!-- Dynamically populated data boxes will go here -->
+      </div>
+
+      <!-- New: Drone Graphs for Homepage -->
       <h2 style="text-align:center;">Airspeed &amp; Altitude</h2>
-      <div id="homepage-graphs" style="display:flex; flex-wrap:wrap; justify-content:space-around;">
+      <div id="homepage-graphs" style="display: flex; flex-wrap: wrap; justify-content: space-around;">
         {% for drone in drones %}
-          <div class="graph-box" style="width:45%; margin:20px; position:relative;">
+          <div class="graph-box" style="width: 45%; margin: 20px; position:relative;">
             <h3>Drone {{ drone }}</h3>
             <!-- LIVE COUNTER BOX -->
             <div class="counter-box" style="position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.8); padding:6px; border-radius:5px; text-align:right;">
               <p style="margin:0;font-size:14px;">Airspeed: <span id="ctr-{{ drone }}-airspeed">--</span> kt</p>
               <p style="margin:0;font-size:14px;">Altitude: <span id="ctr-{{ drone }}-altitude">--</span> ft</p>
             </div>
-            <div id="graph-home-{{ drone }}" style="height:300px;"></div>
+            <div id="graph-home-{{ drone }}" style="height: 300px;"></div>
           </div>
         {% endfor %}
       </div>
@@ -72,17 +87,14 @@
         const droneList = JSON.parse('{{ drones | tojson | safe }}');
         const graphState = {};
 
-        // helper to update the live counters
         function updateHomepageCounters(callSign, airspeed, altitude) {
           document.getElementById(`ctr-${callSign}-airspeed`).textContent = airspeed.toFixed(2);
           document.getElementById(`ctr-${callSign}-altitude`).textContent = altitude.toFixed(0);
         }
 
-        // initialize charts and load history
         droneList.forEach(callSign => {
           graphState[callSign] = { counter: 0 };
 
-          // create empty Plotly chart
           Plotly.newPlot(
             `graph-home-${callSign}`,
             [
@@ -97,7 +109,6 @@
             }
           );
 
-          // load full history and set initial counters
           fetch(`/data/${callSign}`)
             .then(res => res.json())
             .then(data => {
@@ -121,7 +132,6 @@
             .catch(console.error);
         });
 
-        // poll every second for new points and update counters
         setInterval(() => {
           droneList.forEach(callSign => {
             fetch(`/data/${callSign}`)
@@ -151,10 +161,6 @@
         }, 1000);
       </script>
 
-      <!-- Leaflet and Custom JS -->
-      <script>
-        window.droneCallSigns = JSON.parse('{{ drones | tojson | safe }}');
-      </script>
       <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
       <script src="{{ url_for('static', filename='js/splitmap.js') }}"></script>
     {% endblock %}
