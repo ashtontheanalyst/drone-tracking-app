@@ -7,20 +7,26 @@ from collections import defaultdict
 from dotenv import load_dotenv
 
 # ——— CONFIGURATION ———
-URL = "http://127.0.0.1:8000/data"
 #URL = "https://ashtonrwsmith.pythonanywhere.com/data"
+URL = "http://127.0.0.1:8000/data"
 
 # Load environment variables from .env file
 load_dotenv()
-# Get the API key from the environment
 API_KEY = os.getenv("API_KEY")
-
 
 HEADERS = {
     "Content-Type": "application/json",
     "X-API-KEY": API_KEY
 }
 JSON_DIR = "/Users/avery.austin/Desktop/IPG/CROW/DroneTracker/json_data"
+
+# ——— MAP FLIGHT NAMES TO CALLSIGNS ———
+FLIGHT_NAME_TO_CALLSIGN = {
+    "RELLIS_North_to_Hearne": "DUSKY18",
+    "RELLIS_West_to_Caldwell": "DUSKY21",
+    "RELLIS_South_to_AggieFarm": "DUSKY24",
+    "Disaster_City_Survey": "DUSKY27"
+}
 
 # ——— COLLECT JSON FILES BY FLIGHT NAME ———
 json_files = sorted(f for f in os.listdir(JSON_DIR) if f.endswith('.json'))
@@ -52,8 +58,16 @@ while active_flights:
         with open(full_path) as f:
             packet = json.load(f)
 
-        # Send raw packet; server will enrich it with deviation + cumulative
+        # Override the callsign in the packet
+        new_callsign = FLIGHT_NAME_TO_CALLSIGN.get(flight_name)
+        if new_callsign:
+            packet["call_sign"] = new_callsign
+
+        # Print callsign and filename being sent
+        print(f"Sending file: {fname} | callsign: {packet.get('call_sign')}")
+
+        # Send the packet
         resp = requests.post(URL, headers=HEADERS, json=packet)
-        print(f"[{flight_name}] Sent {fname} | HTTP {resp.status_code}")
+        print(f"→ HTTP Status: {resp.status_code}")
 
     time.sleep(1)
