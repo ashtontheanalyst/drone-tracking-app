@@ -9,41 +9,17 @@
     
     <!-- Left side for the graphs -->
     <div class="graph-container" style="width: 40%; padding: 0px;">
-
-      <!-- Graph 1 + live counter -->
-      <div style="position: relative; margin-bottom: 20px;">
-        <div id="graph1" style="height: 250px; width: 100%; max-width: 700px;"></div>
-        <div class="counter-box" style="position: absolute; top:10px; right:10px; background: rgba(255,255,255,0.8); padding:6px; border-radius:5px; text-align:right;">
-          <p style="margin:0;font-size:14px;">Airspeed: <span id="ctr1-airspeed">--</span> kt</p>
-          <p style="margin:0;font-size:14px;">Altitude: <span id="ctr1-altitude">--</span> ft</p>
-        </div>
-      </div>
-
-      <!-- Graph 2 + live counter -->
-      <div style="position: relative; margin-bottom: 20px;">
-        <div id="graph2" style="height: 250px; width: 100%; max-width: 700px;"></div>
-        <div class="counter-box" style="position: absolute; top:10px; right:10px; background: rgba(255,255,255,0.8); padding:6px; border-radius:5px; text-align:right;">
-          <p style="margin:0;font-size:14px;">Deviation: <span id="ctr2-dev">--</span> ft</p>
-        </div>
-      </div>
-
-      <!-- Graph 3 + live counter -->
-      <div style="position: relative;">
-        <div id="graph3" style="height: 250px; width: 100%; max-width: 700px;"></div>
-        <div class="counter-box" style="position: absolute; top:10px; right:10px; background: rgba(255,255,255,0.8); padding:6px; border-radius:5px; text-align:right;">
-          <p style="margin:0;font-size:14px;">Cumul. Dev: <span id="ctr3-cum">--</span> ft</p>
-        </div>
-      </div>
-
+      <div id="graph1" style="height: 250px; width: 100%; max-width: 700px;"></div>
+      <div id="graph2" style="height: 250px; width: 100%; max-width: 700px;"></div>
+      <div id="graph3" style="height: 250px; width: 100%; max-width: 700px;"></div>
     </div>
 
     <!-- Right side for the map -->
     <div class="map-container" style="width: 60%; padding: 20px;">
-      <div id="map" style="height: 70vh; width: 100%; border-radius: 10px; box-shadow: 0px 4px 8px rgba(0,0,0,0.1);"></div>
+      <div id="map" style="height: 70vh; width: 100%; border-radius: 10px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);"></div>
     </div>
 
   </div>
-
   <!-- External Libraries -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -52,16 +28,6 @@
   <!-- Real-time Graph Update Script -->
   <script>
     const callSign = "{{ call_sign }}"; // current callsign
-
-    // ★ new helper to update the live counter boxes
-    function updateDroneCounters(data) {
-      const sp  = (data.velocity.airspeed * 1.94384).toFixed(2);
-      const alt = data.position.altitude.toFixed(0);
-      document.getElementById('ctr1-airspeed').textContent = sp;
-      document.getElementById('ctr1-altitude').textContent = alt;
-      document.getElementById('ctr2-dev').textContent      = data.deviation.toFixed(2);
-      document.getElementById('ctr3-cum').textContent      = data.cumulative_dev_sum.toFixed(2);
-    }
 
     // Graph 1: airspeed & altitude
     let graph1Time = [], graph1Airspeed = [], graph1Altitude = [], graph1Counter = 0;
@@ -105,9 +71,6 @@
         x: [[graph3Counter]],
         y: [[data.cumulative_dev_sum]]
       }, [0]);
-
-      // ★ update the displayed counters
-      updateDroneCounters(data);
     }
 
     function SLOWupdateGraphs(dataArray) {
@@ -150,9 +113,6 @@
           x: [[graph3Counter]],
           y: [[data.cumulative_dev_sum]]
         }, [0]);
-
-        // ★ update counters for each in slow load
-        updateDroneCounters(data);
       });
     }
 
@@ -164,12 +124,16 @@
       const cumDevs    = dataArray.map(d => d.cumulative_dev_sum || 0);
       const deviationColors = deviations.map(d => d > 25 ? 'red' : 'blue');
 
-      // initialize data
+      // initialize graph 1 data
       graph1Time      = time.slice();
       graph1Airspeed  = airspeeds.slice();
       graph1Altitude  = altitudes.slice();
       graph1Counter   = time.length;
+
+      // initialize graph 2 data
       graph2Counter   = time.length;
+
+      // initialize graph 3 data
       graph3Time      = time.slice();
       graph3CumDevSum = cumDevs.slice();
       graph3Counter   = time.length;
@@ -202,11 +166,6 @@
         xaxis:{ title:'Time (s)' },
         yaxis:{ title:'Total Deviation (ft)', autorange:true }
       });
-
-      // ★ set counters to final historical values
-      if (dataArray.length) {
-        updateDroneCounters(dataArray[dataArray.length - 1]);
-      }
     }
 
     // Initial load
@@ -231,4 +190,3 @@
 
   </script>
 {% endblock %}
-
