@@ -1,95 +1,167 @@
-// splitmap.js
-// Initialize left map (#map-all) with all drones
-var mapAll = L.map('map-all').setView([27.7623, -97.3246], 11);
-// Initialize right map (#map-single) with default view centered on first drone
-var defaultCoords = [27.7123, -97.3246];
-var mapSingle = L.map('map-single').setView(defaultCoords, 14);
+// static/js/splitmap.js
+document.addEventListener('DOMContentLoaded', function() {
+  // ─── CONFIG ────────────────────────────────────────────────────────────────
+  var defaultCenter   = [27.7123, -97.3246];
+  var defaultZoom     = 14;
+  var pollIntervalAll = 2000;  // ms between full-map updates
+  var pollIntervalOne = 1000;  // ms between single-map updates
 
-// Retrieve all callsigns injected by index.html
-const drones = window.droneCallSigns;
+  // ─── SETUP MAPS ────────────────────────────────────────────────────────────
+  var mapAll    = L.map('map-all').setView(defaultCenter, defaultZoom);
+  var mapSingle = L.map('map-single').setView(defaultCenter, defaultZoom);
 
-// Store markers keyed by callsign for both maps
-var allMarkers    = {};
-var singleMarker  = null;
-var selectedCS    = drones[0];  // default to first in list
+  var tileUrl  = 'https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=3TdwoUdL48yWggYAxvAE';
+  var tileOpts = { attribution: '&copy; <a href="https://www.openmaptiles.org/">OpenMapTiles</a> contributors' };
+  L.tileLayer(tileUrl, tileOpts).addTo(mapAll);
+  L.tileLayer(tileUrl, tileOpts).addTo(mapSingle);
 
-// Custom plane icon
-var planeIcon = L.icon({
-  iconUrl: '/static/images/plane-icon.png',
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-  popupAnchor: [0, -16]
-});
+  var planeIcon = L.icon({
+    iconUrl: '/static/images/plane-icon.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -16]
+  });
 
-// Tile layer for both maps
-L.tileLayer('https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=3TdwoUdL48yWggYAxvAE', {
-  attribution: '&copy; <a href="https://www.openmaptiles.org/">OpenMapTiles</a> contributors'
-}).addTo(mapAll);
-L.tileLayer('https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=3TdwoUdL48yWggYAxvAE', {
-  attribution: '&copy; <a href="https://www.openmaptiles.org/">OpenMapTiles</a> contributors'
-}).addTo(mapSingle);
+  // ─── STATE ──────────────────────────────────────────────────────────────────
+  var droneMarkersAll   = {};   // one marker per drone on the left map
+  var droneMarkerSingle = null; // the selected drone on the right map
+  var selectedCallSign  = null; // which drone we’re following
 
-// Place placeholder markers for each drone on left map
-drones.forEach(cs => {
-  // start each at defaultCoords until real data arrives
-  var m = L.marker(defaultCoords, { icon: planeIcon })
-            .addTo(mapAll)
-            .bindPopup(`Drone ${cs}`)
-            .on('click', () => {
-              selectedCS = cs;
-              // when clicked, move/zoom single map to that drone’s location
-              if (allMarkers[cs]) {
-                var latlng = allMarkers[cs].getLatLng();
-                if (!singleMarker) {
-                  singleMarker = L.marker(latlng, { icon: planeIcon }).addTo(mapSingle);
-                } else {
-                  singleMarker.setLatLng(latlng);
-                }
-                mapSingle.setView(latlng, 14);
-              }
-            });
-  allMarkers[cs] = m;
-});
+  // ─── BUILD LIST & CLICK HANDLERS ────────────────────────────────────────────
+  var container = document.getElementById('drone-data-container');
+  window.droneCallSigns.forEach(function(cs, i) {
+    var el = document.createElement('div');
+    el.className    = 'drone-summary';
+    el.id           = 'summary-' + cs;
+    el.style.cursor = 'pointer';
+    el.innerHTML    = `<strong>${cs}</strong><br><span id="pos-${cs}">--</span>`;
 
-// Fetch & update all markers every second
-function updateAllDrones() {
-  drones.forEach(cs => {
-    fetch(`/data/${cs}`)
-      .then(res => res.json())
-      .then(history => {
-        if (!Array.isArray(history) || history.length === 0) return;
-        var latest = history[history.length - 1];
-        var lat = latest.position.latitude;
-        var lng = latest.position.longitude;
-        var latlng = [lat, lng];
+    el.addEventListener('click', function() {
+      // mark selection
+      selectedCallSign = cs;
+      document.querySelectorAll('.drone-summary')
+              .forEach(d => d.classList.remove('selected'));
+      el.classList.add('selected');
 
-        // left-map marker update
-        if (!allMarkers[cs]) {
-          allMarkers[cs] = L.marker(latlng, { icon: planeIcon }).addTo(mapAll).bindPopup(`Drone ${cs}`);
-        } else {
-          allMarkers[cs].setLatLng(latlng).getPopup().setContent(`Drone ${cs}<br>${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+      // immediately fetch & center that one
+      fetchSingle();
+    });
+
+    container.appendChild(el);
+
+    // auto-select the first drone on load
+    if (i === 0) {
+      selectedCallSign = cs;
+      el.classList.add('selected');
+    }
+  });
+
+  // ─── FETCH & RENDER ALL DRONES ──────────────────────────────────────────────
+  function fetchAll() {
+    Promise.all(
+      window.droneCallSigns.map(function(cs) {
+        return fetch('/data/' + cs)
+          .then(r => r.json())
+          .then(hist => ({ cs, hist }))
+          .catch(() => ({ cs, hist: [] }));
+      })
+    ).then(function(results) {
+      results.forEach(function(item) {
+        var cs   = item.cs;
+        var hist = item.hist;
+        if (Array.isArray(hist) && hist.length) {
+          updateAll(hist[hist.length - 1]);
         }
+      });
+      fitAllBounds();
+    });
+  }
 
-        // adjust left map bounds to include all markers
-        var bounds = L.latLngBounds(Object.values(allMarkers).map(m => m.getLatLng()));
-        if (bounds.isValid()) {
-          mapAll.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
-        }
+  function updateAll(pkt) {
+    var lat = pkt.position.latitude,
+        lng = pkt.position.longitude,
+        hdg = pkt.velocity.track,
+        cs  = pkt.call_sign;
 
-        // if this is the currently selected drone, update right map as well
-        if (cs === selectedCS) {
-          if (!singleMarker) {
-            singleMarker = L.marker(latlng, { icon: planeIcon }).addTo(mapSingle);
-          } else {
-            singleMarker.setLatLng(latlng);
-          }
-          mapSingle.setView(latlng, 14);
+    var m = droneMarkersAll[cs];
+    if (!m) {
+      m = L.marker([lat, lng], {
+            icon: planeIcon,
+            rotationAngle: hdg,
+            rotationOrigin: 'center center'
+          })
+          .addTo(mapAll)
+          .bindPopup(`Drone ${cs}`)
+          .on('click', function() {
+            // clicking a marker = clicking its summary
+            document.getElementById('summary-' + cs).click();
+          });
+      droneMarkersAll[cs] = m;
+    } else {
+      m.setLatLng([lat, lng])
+       .setRotationAngle(hdg)
+       .getPopup()
+       .setContent(`Drone ${cs}<br>${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    }
+
+    // update the little text under the summary
+    var pe = document.getElementById('pos-' + cs);
+    if (pe) pe.textContent = lat.toFixed(4) + ', ' + lng.toFixed(4);
+  }
+
+  function fitAllBounds() {
+    var ms = Object.values(droneMarkersAll);
+    if (!ms.length) return;
+    var fg = L.featureGroup(ms);
+    mapAll.fitBounds(fg.getBounds().pad(0.2));
+  }
+
+  // ─── FETCH & RENDER JUST THE SELECTED DRONE ────────────────────────────────
+  function fetchSingle() {
+    if (!selectedCallSign) return;
+    fetch('/data/' + selectedCallSign)
+      .then(r => r.json())
+      .then(function(hist) {
+        if (Array.isArray(hist) && hist.length) {
+          updateSingle(hist[hist.length - 1]);
         }
       })
       .catch(console.error);
-  });
-}
+  }
 
-setInterval(updateAllDrones, 1000);
-updateAllDrones();
+  function updateSingle(pkt) {
+    var lat = pkt.position.latitude,
+        lng = pkt.position.longitude,
+        hdg = pkt.velocity.track,
+        cs  = pkt.call_sign;
+
+    // create or move & rotate marker (mirror of map.js)
+    if (!droneMarkerSingle) {
+      droneMarkerSingle = L.marker([lat, lng], {
+        icon: planeIcon,
+        rotationAngle: hdg,
+        rotationOrigin: 'center center'
+      })
+      .addTo(mapSingle)
+      .bindPopup(`Drone ${cs}`);
+    } else {
+      droneMarkerSingle
+        .setLatLng([lat, lng])
+        .setRotationAngle(hdg)
+        .getPopup()
+        .setContent(`Drone ${cs}<br>${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    }
+
+    // — ensure the right map recenters on every update:
+    mapSingle.panTo([lat, lng], { animate: false });
+    droneMarkerSingle.openPopup();
+  }
+
+  // ─── START YOUR POLLING LOOPS ──────────────────────────────────────────────
+  fetchAll();
+  setInterval(fetchAll, pollIntervalAll);
+
+  fetchSingle();
+  setInterval(fetchSingle, pollIntervalOne);
+});
 
