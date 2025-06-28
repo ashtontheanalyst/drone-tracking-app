@@ -13,12 +13,14 @@ URL = "http://127.0.0.1:8000/data"
 # Load environment variables from .env file
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
+if not API_KEY:
+    raise RuntimeError("API_KEY environment variable not set")
 
 HEADERS = {
     "Content-Type": "application/json",
     "X-API-KEY": API_KEY
 }
-JSON_DIR = "/Users/avery.austin/Desktop/IPG/CROW/DroneTracker/json_data"
+JSON_DIR = "/Users/andre/Desktop/BCDC/mysite 2/json_data"
 
 # ——— MAP FLIGHT NAMES TO CALLSIGNS ———
 FLIGHT_NAME_TO_CALLSIGN = {
@@ -27,6 +29,14 @@ FLIGHT_NAME_TO_CALLSIGN = {
     "RELLIS_South_to_AggieFarm": "DUSKY24",
     "Disaster_City_Survey": "DUSKY27"
 }
+
+# ——— CARDINAL DIRECTION HELPERS ———
+def get_cardinal(angle):
+    """Convert degrees (0–360) to one of 8 cardinal directions."""
+    dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+    # each sector is 360/8 = 45°, offset so 0° is centered on 'N'
+    idx = int((angle + 22.5) // 45) % 8
+    return dirs[idx]
 
 # ——— COLLECT JSON FILES BY FLIGHT NAME ———
 json_files = sorted(f for f in os.listdir(JSON_DIR) if f.endswith('.json'))
@@ -63,11 +73,27 @@ while active_flights:
         if new_callsign:
             packet["call_sign"] = new_callsign
 
-        # Print callsign and filename being sent
-        print(f"Sending file: {fname} | callsign: {packet.get('call_sign')}")
+        # Extract heading & compute cardinal
+        heading = None
+        cardinal = None
+        if ("velocity" in packet and
+            isinstance(packet["velocity"], dict) and
+            "track" in packet["velocity"]):
+            heading = packet["velocity"]["track"]
+            cardinal = get_cardinal(heading)
+
+        # Print detailed info
+        info = [
+            f"Sending file: {fname}",
+            f"callsign: {packet.get('call_sign')}"
+        ]
+        if heading is not None:
+            info.append(f"heading: {heading:.2f}° ({cardinal})")
+        print(" | ".join(info))
 
         # Send the packet
         resp = requests.post(URL, headers=HEADERS, json=packet)
         print(f"→ HTTP Status: {resp.status_code}")
 
     time.sleep(1)
+
