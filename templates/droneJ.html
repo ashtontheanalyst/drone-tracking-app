@@ -1,192 +1,256 @@
+<!-- templates/droneJ.html -->
 {% extends "index.html" %}
 {% block title %}Drone {{ call_sign }}{% endblock %}
 
 {% block content %}
   <h1 style="text-align: center;">Drone {{ call_sign }} In-Depth</h1>
 
-  <!-- Split container with left for graphs and right for map -->
-  <div class="drone-j-container" style="display: flex; width: 100%; height: 600px; padding: 0 20px;">
-    
-    <!-- Left side for the graphs -->
-    <div class="graph-container" style="width: 40%; padding: 0px;">
-      <div id="graph1" style="height: 250px; width: 100%; max-width: 700px;"></div>
-      <div id="graph2" style="height: 250px; width: 100%; max-width: 700px;"></div>
-      <div id="graph3" style="height: 250px; width: 100%; max-width: 700px;"></div>
+  <div class="drone-j-container"
+       style="display: flex; width: 100%; height: 600px; padding: 0 20px;">
+
+    <!-- LEFT: Three graphs -->
+    <div class="graph-container" style="width: 40%; padding: 0;">
+      <!-- Graph 1: Airspeed & Altitude -->
+      <div style="position: relative; margin-bottom: 20px;">
+        <div id="graph1" style="height: 250px; width: 100%; max-width: 700px;"></div>
+        <div class="counter-box"
+             style="position: absolute; top:10px; right:10px;
+                    background: rgba(255,255,255,0.8);
+                    padding:6px; border-radius:5px; text-align:right;">
+          <p style="margin:0;font-size:14px;">
+            Airspeed: <span id="ctr1-airspeed">--</span> kt
+          </p>
+          <p style="margin:0;font-size:14px;">
+            Altitude: <span id="ctr1-altitude">--</span> ft
+          </p>
+        </div>
+      </div>
+
+      <!-- Graph 2: Deviation -->
+      <div style="position: relative; margin-bottom: 20px;">
+        <div id="graph2" style="height: 250px; width: 100%; max-width: 700px;"></div>
+        <div class="counter-box"
+             style="position: absolute; top:10px; right:10px;
+                    background: rgba(255,255,255,0.8);
+                    padding:6px; border-radius:5px; text-align:right;">
+          <p style="margin:0;font-size:14px;">
+            Deviation: <span id="ctr2-dev">--</span> ft
+          </p>
+        </div>
+      </div>
+
+      <!-- Graph 3: Cumulative Deviation -->
+      <div style="position: relative;">
+        <div id="graph3" style="height: 250px; width: 100%; max-width: 700px;"></div>
+        <div class="counter-box"
+             style="position: absolute; top:10px; right:10px;
+                    background: rgba(255,255,255,0.8);
+                    padding:6px; border-radius:5px; text-align:right;">
+          <p style="margin:0;font-size:14px;">
+            Cumul. Dev: <span id="ctr3-cum">--</span> ft
+          </p>
+        </div>
+      </div>
     </div>
 
-    <!-- Right side for the map -->
+    <!-- RIGHT: Rotating‐plane map -->
     <div class="map-container" style="width: 60%; padding: 20px;">
-      <div id="map" style="height: 70vh; width: 100%; border-radius: 10px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);"></div>
+      <div id="map"
+           style="height: 70vh; width: 100%;
+                  border-radius: 10px;
+                  box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+      </div>
     </div>
-
   </div>
-  <!-- External Libraries -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+  <!-- 1) Rotating‐plane map logic -->
   <script src="{{ url_for('static', filename='js/map.js') }}"></script>
 
-  <!-- Real-time Graph Update Script -->
+  <!-- 2) Real-time Graph Update Script -->
   <script>
-    const callSign = "{{ call_sign }}"; // current callsign
+    const callSign = "{{ call_sign }}";
 
-    // Graph 1: airspeed & altitude
-    let graph1Time = [], graph1Airspeed = [], graph1Altitude = [], graph1Counter = 0;
-    // Graph 2: instant deviation
-    let graph2Counter = 0;
-    // Graph 3: cumulative deviation over 25 ft
-    let graph3Time = [], graph3CumDevSum = [], graph3Counter = 0;
+    function parseZulu(z) { return new Date(z); }
+    function windowStart(dt) { return new Date(dt.getTime() - 60_000); }
 
-    function SingleJSONupdateGraphs(data) {
-      if (!data 
-       || !data.velocity 
-       || !data.position 
-       || data.cumulative_dev_sum === undefined
-      ) return;
-
-      // Graph 1 updates
-      graph1Counter++;
-      graph1Time.push(graph1Counter);
-      const airspeed_knots = data.velocity.airspeed * 1.94384;
-      graph1Airspeed.push(airspeed_knots);
-      graph1Altitude.push(data.position.altitude);
-      Plotly.extendTraces('graph1', {
-        x: [[graph1Counter], [graph1Counter]],
-        y: [[airspeed_knots], [data.position.altitude]]
-      }, [0, 1]);
-
-      // Graph 2 updates
-      graph2Counter++;
-      const barColor = data.deviation > 25 ? 'red' : 'blue';
-      Plotly.extendTraces('graph2', {
-        x: [[graph2Counter]],
-        y: [[data.deviation]],
-        'marker.color': [[barColor]]
-      }, [0]);
-
-      // Graph 3 updates
-      graph3Counter++;
-      graph3Time.push(graph3Counter);
-      graph3CumDevSum.push(data.cumulative_dev_sum);
-      Plotly.extendTraces('graph3', {
-        x: [[graph3Counter]],
-        y: [[data.cumulative_dev_sum]]
-      }, [0]);
+    function updateDroneCounters(data) {
+      document.getElementById('ctr1-airspeed').textContent =
+        (data.velocity.airspeed * 1.94384).toFixed(2);
+      document.getElementById('ctr1-altitude').textContent  =
+        data.position.altitude.toFixed(0);
+      document.getElementById('ctr2-dev').textContent       =
+        data.deviation.toFixed(2);
+      document.getElementById('ctr3-cum').textContent       =
+        data.cumulative_dev_sum.toFixed(2);
     }
 
-    function SLOWupdateGraphs(dataArray) {
-      if (!Array.isArray(dataArray) || dataArray.length === 0) {
-        console.warn("Empty or invalid data");
-        return;
+    // ─── INITIALIZE PLOTS ──────────────────────────────────────────────────────
+    Plotly.newPlot('graph1',
+      [
+        { x: [], y: [], mode: 'lines', name: 'Airspeed (knots)' },
+        { x: [], y: [], mode: 'lines', name: 'Altitude (ft)', yaxis: 'y2' }
+      ],
+      {
+        title: 'Airspeed & Altitude',
+        legend: {
+          orientation: 'h',
+          x: 0.5, xanchor: 'center',
+          y: 1.15, yanchor: 'bottom'
+        },
+        margin: { t: 60, b: 50 },
+        xaxis: {
+          title: 'Time', type: 'date',
+          range: [ windowStart(new Date()), new Date() ],
+          rangeslider: { visible: true }
+        },
+        yaxis:   { title: 'Airspeed (knots)' },
+        yaxis2:  { title: 'Altitude (ft)', overlaying: 'y', side: 'right' }
       }
-      dataArray.forEach(data => {
-        if (!data 
-         || !data.velocity 
-         || !data.position 
-         || data.cumulative_dev_sum === undefined
-        ) return;
+    );
 
-        // Graph 1
-        graph1Counter++;
-        graph1Time.push(graph1Counter);
-        const airspeed_knots = data.velocity.airspeed * 1.94384;
-        graph1Airspeed.push(airspeed_knots);
-        graph1Altitude.push(data.position.altitude);
-        Plotly.extendTraces('graph1', {
-          x: [[graph1Counter], [graph1Counter]],
-          y: [[airspeed_knots], [data.position.altitude]]
-        }, [0, 1]);
+    Plotly.newPlot('graph2',
+      [{ x: [], y: [], type: 'bar', name: 'Deviation (ft)' }],
+      {
+        title: 'Deviation (ft)',
+        xaxis: {
+          title: 'Time', type: 'date',
+          range: [ windowStart(new Date()), new Date() ],
+          rangeslider: { visible: true }
+        },
+        yaxis: { title: 'Deviation (ft)' }
+      }
+    );
 
-        // Graph 2
-        graph2Counter++;
-        const barColor = data.deviation > 25 ? 'red' : 'blue';
-        Plotly.extendTraces('graph2', {
-          x: [[graph2Counter]],
-          y: [[data.deviation]],
-          'marker.color': [[barColor]]
-        }, [0]);
+    Plotly.newPlot('graph3',
+      [{ x: [], y: [], mode: 'lines+markers', name: 'Cumulative Deviation' }],
+      {
+        title: 'Cumulative Deviation ≥ 25 ft',
+        xaxis: {
+          title: 'Time', type: 'date',
+          range: [ windowStart(new Date()), new Date() ],
+          rangeslider: { visible: true }
+        },
+        yaxis: { title: 'Total (ft)' }
+      }
+    );
 
-        // Graph 3
-        graph3Counter++;
-        graph3Time.push(graph3Counter);
-        graph3CumDevSum.push(data.cumulative_dev_sum);
-        Plotly.extendTraces('graph3', {
-          x: [[graph3Counter]],
-          y: [[data.cumulative_dev_sum]]
-        }, [0]);
-      });
+    // ─── LIVE UPDATES ─────────────────────────────────────────────────────────
+    let graph1Counter = 0, graph2Counter = 0, graph3Counter = 0;
+
+    function SingleJSONupdateGraphs(data) {
+      if (!data || !data.velocity || !data.position || data.cumulative_dev_sum === undefined) return;
+      const t   = parseZulu(data.time_measured);
+      const sp  = data.velocity.airspeed * 1.94384;
+      const alt = data.position.altitude;
+      const dev = data.deviation;
+      const cum = data.cumulative_dev_sum;
+
+      graph1Counter++;
+      Plotly.extendTraces('graph1',
+        { x: [[t], [t]], y: [[sp], [alt]] }, [0,1]
+      );
+
+      graph2Counter++;
+      Plotly.extendTraces('graph2',
+        {
+          x: [[t]],
+          y: [[dev]],
+          'marker.color': [[ dev > 25 ? 'red' : 'blue' ]]
+        },
+        [0]
+      );
+
+      graph3Counter++;
+      Plotly.extendTraces('graph3',
+        { x: [[t]], y: [[cum]] }, [0]
+      );
+
+      updateDroneCounters(data);
+
+      Plotly.relayout('graph1', { 'xaxis.range': [ windowStart(t), t ] });
+      Plotly.relayout('graph2', { 'xaxis.range': [ windowStart(t), t ] });
+      Plotly.relayout('graph3', { 'xaxis.range': [ windowStart(t), t ] });
     }
 
     function loadHistoricalGraph(dataArray) {
-      const time = dataArray.map((_, i) => i + 1);
-      const airspeeds = dataArray.map(d => d.velocity.airspeed * 1.94384);
-      const altitudes = dataArray.map(d => d.position.altitude);
+      const times      = dataArray.map(d => parseZulu(d.time_measured));
+      const airspeeds  = dataArray.map(d => d.velocity.airspeed * 1.94384);
+      const altitudes  = dataArray.map(d => d.position.altitude);
       const deviations = dataArray.map(d => d.deviation);
       const cumDevs    = dataArray.map(d => d.cumulative_dev_sum || 0);
-      const deviationColors = deviations.map(d => d > 25 ? 'red' : 'blue');
+      const colors     = deviations.map(d => d > 25 ? 'red' : 'blue');
 
-      // initialize graph 1 data
-      graph1Time      = time.slice();
-      graph1Airspeed  = airspeeds.slice();
-      graph1Altitude  = altitudes.slice();
-      graph1Counter   = time.length;
+      graph1Counter = graph2Counter = graph3Counter = times.length;
 
-      // initialize graph 2 data
-      graph2Counter   = time.length;
+      // re-draw graph1 with history + legend up top
+      Plotly.newPlot('graph1',
+        [
+          { x: times, y: airspeeds, mode: 'lines', name: 'Airspeed (knots)' },
+          { x: times, y: altitudes, mode: 'lines', name: 'Altitude (ft)', yaxis: 'y2' }
+        ],
+        {
+          title: 'Airspeed & Altitude',
+          legend: {
+            orientation: 'h',
+            x: 0.5, xanchor: 'center',
+            y: 1.15, yanchor: 'bottom'
+          },
+          margin: { t: 60, b: 50 },
+          xaxis: {
+            title: 'Time', type: 'date',
+            range: [ windowStart(times.slice(-1)[0] || new Date()), times.slice(-1)[0] || new Date() ],
+            rangeslider: { visible: true }
+          },
+          yaxis:   { title: 'Airspeed (knots)' },
+          yaxis2:  { title: 'Altitude (ft)', overlaying: 'y', side: 'right' }
+        }
+      );
 
-      // initialize graph 3 data
-      graph3Time      = time.slice();
-      graph3CumDevSum = cumDevs.slice();
-      graph3Counter   = time.length;
+      Plotly.newPlot('graph2',
+        [{ x: times, y: deviations, type: 'bar', marker: { color: colors } }],
+        {
+          title: 'Deviation (ft)',
+          xaxis: {
+            title: 'Time', type: 'date',
+            range: [ windowStart(times.slice(-1)[0] || new Date()), times.slice(-1)[0] || new Date() ],
+            rangeslider: { visible: true }
+          },
+          yaxis: { title: 'Deviation (ft)' }
+        }
+      );
 
-      Plotly.newPlot('graph1', [
-        { x: time, y: airspeeds, mode: 'lines', name: 'Airspeed (knots)' },
-        { x: time, y: altitudes, mode: 'lines', name: 'Altitude (ft)', yaxis: 'y2' }
-      ], {
-        title: 'Airspeed and Altitude over Time',
-        xaxis: { title: 'Time (s)' },
-        yaxis: { title: 'Airspeed (knots)' },
-        yaxis2:{ title: 'Altitude (ft)', overlaying:'y', side:'right' }
-      });
+      Plotly.newPlot('graph3',
+        [{ x: times, y: cumDevs, mode: 'lines+markers', name: 'Cumulative Deviation' }],
+        {
+          title: 'Cumulative Deviation ≥ 25 ft',
+          xaxis: {
+            title: 'Time', type: 'date',
+            range: [ windowStart(times.slice(-1)[0] || new Date()), times.slice(-1)[0] || new Date() ],
+            rangeslider: { visible: true }
+          },
+          yaxis: { title: 'Total (ft)' }
+        }
+      );
 
-      Plotly.newPlot('graph2', [{
-        x: time,
-        y: deviations,
-        type: 'bar',
-        marker: { color: deviationColors }
-      }], {
-        title: 'Deviation from Course (ft)',
-        xaxis:{ title:'Update #' },
-        yaxis:{ title:'Deviation (ft)', range:[0,50] }
-      });
-
-      Plotly.newPlot('graph3', [
-        { x: time, y: cumDevs, mode: 'lines+markers', name: 'Cumulative Deviation > 25 ft' }
-      ], {
-        title: 'Cumulative Deviation ≥ 25 ft over Time',
-        xaxis:{ title:'Time (s)' },
-        yaxis:{ title:'Total Deviation (ft)', autorange:true }
-      });
+      if (dataArray.length) updateDroneCounters(dataArray.slice(-1)[0]);
     }
 
-    // Initial load
+    // kick things off
     loadHistoricalGraph([]);
-    // Fetch full history once
     fetch(`/data/${callSign}`)
-      .then(res => res.json())
-      .then(data => loadHistoricalGraph(data))
-      .catch(err => console.error(err));
+      .then(r => r.json())
+      .then(loadHistoricalGraph)
+      .catch(console.error);
 
-    // Poll for new data every second
     setInterval(() => {
       fetch(`/data/${callSign}`)
-        .then(res => res.json())
-        .then(dataArray => {
-          if (!Array.isArray(dataArray) || dataArray.length === 0) return;
-          const newPoints = dataArray.slice(graph1Counter);
-          newPoints.forEach(point => SingleJSONupdateGraphs(point));
+        .then(r => r.json())
+        .then(arr => {
+          if (!Array.isArray(arr)) return;
+          arr.slice(graph1Counter).forEach(pt => SingleJSONupdateGraphs(pt));
         })
-        .catch(err => console.error(err));
+        .catch(console.error);
     }, 1000);
-
   </script>
 {% endblock %}
+
