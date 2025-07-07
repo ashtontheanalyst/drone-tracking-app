@@ -24,11 +24,8 @@
   <!-- Header Navigation Bar -->
   <div class="header">
     <div class="nav-title">
-      <img
-        src="{{ url_for('static', filename='images/BCDC_LOGO.svg') }}"
-        alt="BCDC Logo"
-        class="header-logo"
-      />
+      <img src="{{ url_for('static', filename='images/BCDC_LOGO.svg') }}"
+           alt="BCDC Logo" class="header-logo" />
     </div>
     <div class="nav-menu">
       <button onclick="location.href='/'">Home</button>
@@ -36,9 +33,7 @@
         <button class="dropbtn">Drones ▾</button>
         <div class="dropdown-content">
           {% for drone in drones %}
-            <a href="{{ url_for('views.drone_page', call_sign=drone) }}">
-              Drone {{ drone }}
-            </a>
+            <a href="{{ url_for('views.drone_page', call_sign=drone) }}">Drone {{ drone }}</a>
           {% endfor %}
         </div>
       </div>
@@ -128,10 +123,10 @@
         function parseZulu(z) { return new Date(z); }
         function windowStart(dt) { return new Date(dt.getTime() - 60_000); }
 
+        // Initialize each drone’s plot
         droneList.forEach(callSign => {
           graphState[callSign] = { counter: 0 };
 
-          // INITIALIZE PLOT WITH LEGEND BELOW
           Plotly.newPlot(
             `graph-home-${callSign}`,
             [
@@ -156,7 +151,7 @@
             }
           );
 
-          // load history & update counters...
+          // Load history
           fetch(`/data/${callSign}`)
             .then(res => res.json())
             .then(data => {
@@ -188,7 +183,7 @@
             .catch(console.error);
         });
 
-        // Poll for real-time updates every second
+        // Poll for real-time updates
         setInterval(() => {
           droneList.forEach(callSign => {
             fetch(`/data/${callSign}`)
@@ -196,6 +191,7 @@
               .then(data => {
                 const state = graphState[callSign];
                 if (!Array.isArray(data) || data.length <= state.counter) return;
+
                 data.slice(state.counter).forEach(pt => {
                   state.counter++;
                   const t  = parseZulu(pt.time_measured);
@@ -219,7 +215,7 @@
         }, 1000);
       </script>
 
-      <!-- 5) Split‐map logic (must live inside the homepage content block) -->
+      <!-- 5) Split‐map logic -->
       <script src="{{ url_for('static', filename='js/splitmap.js') }}"></script>
     {% endblock %}
   </div>
