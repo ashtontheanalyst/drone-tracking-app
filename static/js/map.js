@@ -1,57 +1,59 @@
-// static/js/map.js
-// (for individual‐drone pages; rotates the plane to its track)
-var map = L.map('map').setView([27.7123, -97.3246], 14);
+// static/js/map.js  (for the individual‐drone page)
+const map = L.map('map').setView([27.7123, -97.3246], 14);
 
-var droneMarkers = {};
-
-var planeIcon = L.icon({
+const planeIcon = L.icon({
   iconUrl: '/static/images/plane-icon.png',
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-  popupAnchor: [0, -16]
+  iconSize: [32,32],
+  iconAnchor: [16,16],
+  popupAnchor: [0,-16]
 });
 
 L.tileLayer(
-  'https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=3TdwoUdL48yWggYAxvAE',
+  'https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=jU54ne5D7wcPIuhFGLb4',
   { attribution: '&copy; <a href="https://www.openmaptiles.org/">OpenMapTiles</a> contributors' }
 ).addTo(map);
 
-function fetchDroneData() {
-  var callSign = window.location.pathname.split('/').pop();
-  fetch('/data/' + callSign)
-    .then(res => res.json())
+// this will hold our past positions
+const pathLine = L.polyline([], { color: 'darkblue', weight: 3 }).addTo(map);
+let droneMarker = null;
+
+function refreshDrone() {
+  const cs = window.location.pathname.split('/').pop();
+  fetch('/data/' + cs)
+    .then(r => r.json())
     .then(history => {
-      if (!Array.isArray(history) || history.length === 0) return;
-      updateOrCreateMarker(history[history.length - 1]);
+      if (!Array.isArray(history) || !history.length) return;
+      // rebuild the entire trail
+      const coords = history.map(pt => [pt.position.latitude, pt.position.longitude]);
+      pathLine.setLatLngs(coords);
+      // move/update the plane at the end
+      const last = history[history.length-1];
+      updateMarker(last);
     })
     .catch(console.error);
 }
 
-function updateOrCreateMarker(pkt) {
-  var lat = pkt.position.latitude,
-      lng = pkt.position.longitude,
-      cs  = pkt.call_sign,
-      hdg = pkt.velocity.track;
-
-  if (!droneMarkers[cs]) {
-    droneMarkers[cs] = L.marker([lat, lng], {
+function updateMarker(pkt) {
+  const { latitude:lat, longitude:lng } = pkt.position;
+  const hdg = pkt.velocity.track;
+  if (!droneMarker) {
+    droneMarker = L.marker([lat,lng], {
       icon: planeIcon,
       rotationAngle: hdg,
       rotationOrigin: 'center center'
     })
     .addTo(map)
-    .bindPopup(`Drone ${cs}`);
+    .bindPopup(`Drone ${pkt.call_sign}`);
   } else {
-    droneMarkers[cs]
-      .setLatLng([lat, lng])
+    droneMarker
+      .setLatLng([lat,lng])
       .setRotationAngle(hdg)
-      .getPopup()
-      .setContent(`Drone ${cs}<br>${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+      .getPopup().setContent(`Drone ${pkt.call_sign}<br>${lat.toFixed(4)}, ${lng.toFixed(4)}`);
   }
-
-  map.setView([lat, lng], 15);
+  map.panTo([lat,lng], { animate: false });
 }
 
-setInterval(fetchDroneData, 1000);
-fetchDroneData();
+// kick it off
+refreshDrone();
+setInterval(refreshDrone, 1000);
 
