@@ -26,8 +26,13 @@ document.addEventListener('DOMContentLoaded', function() {
   const droneMarkersAll   = {};   // one marker per drone
   let   droneMarkerSingle = null; // the one we follow
   let   selectedCallSign  = null; // current selection
-  const pathSingle        = L.polyline([], { color: 'crimson', weight: 3 }).addTo(mapSingle);
-
+  const pathSingle        = L.polyline([], { color: 'crimson', weight: 3 }).addTo(mapSingle); // <— add this line
+  // label element + helper
+  const labelEl = document.getElementById('zoomed-drone-label');
+  function setFocusedDrone(cs){
+    if (!labelEl) return;
+    labelEl.textContent = cs ? `Zoomed drone: ${cs}` : 'Zoomed drone: —';
+  }
   // ─── BUILD SUMMARY LIST ─────────────────────────────────────────────────────
   const container = document.getElementById('drone-data-container');
   window.droneCallSigns.forEach((cs, i) => {
@@ -42,6 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
       document.querySelectorAll('.drone-summary').forEach(d => d.classList.remove('selected'));
       el.classList.add('selected');
       selectedCallSign = cs;
+      setFocusedDrone(cs);
       // clear existing trail
       pathSingle.setLatLngs([]);
       // immediately fetch & draw new history+marker
@@ -54,6 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (i === 0) {
       el.classList.add('selected');
       selectedCallSign = cs;
+      setFocusedDrone(cs);
     }
   });
 
@@ -139,6 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // center
     mapSingle.panTo([lat,lng], { animate: false });
+    setFocusedDrone(pkt.call_sign);
   }
 
 
@@ -149,4 +157,3 @@ document.addEventListener('DOMContentLoaded', function() {
   fetchSingle();
   setInterval(fetchSingle, pollIntervalOne);
 });
-
