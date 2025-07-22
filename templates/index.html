@@ -78,8 +78,12 @@
 
       <!-- Two side-by-side maps -->
       <div class="splitmap-container">
-        <div id="map-all"    class="map-box"></div>
-        <div id="map-single" class="map-box"></div>
+      <div id="map-all"    class="map-box"></div>
+        <!-- wrapper + label -->
+        <div class="map-box-stack">
+          <div id="map-single" class="map-box"></div>
+          <div id="zoomed-drone-label" class="zoom-label">Zoomed drone: —</div>
+        </div>
       </div>
 
       <!-- Drone data summary boxes -->
@@ -221,4 +225,3 @@
   </div>
 </body>
 </html>
-
