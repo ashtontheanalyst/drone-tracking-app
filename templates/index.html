@@ -186,7 +186,6 @@
             })
             .catch(console.error);
         });
-
         // Poll for real-time updates
         setInterval(() => {
           droneList.forEach(callSign => {
@@ -195,13 +194,11 @@
               .then(data => {
                 const state = graphState[callSign];
                 if (!Array.isArray(data) || data.length <= state.counter) return;
-
                 data.slice(state.counter).forEach(pt => {
                   state.counter++;
                   const t  = parseZulu(pt.time_measured);
                   const sp = pt.velocity.airspeed * 1.94384;
                   const al = pt.position.altitude;
-
                   Plotly.extendTraces(
                     `graph-home-${callSign}`,
                     { x: [[t], [t]], y: [[sp], [al]] },
@@ -218,7 +215,6 @@
           });
         }, 1000);
       </script>
-
       <!-- 5) Split‐map logic -->
       <script src="{{ url_for('static', filename='js/splitmap.js') }}"></script>
     {% endblock %}
